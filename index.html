@@ -98,6 +98,7 @@
         <div class="hr"></div>
         <div class="row">
           <button id="btnHireCook">Hire Cook (+$120/day)</button>
+          <button id="btnHireWaiter">Hire Waiter (+$95/day)</button>
           <button id="btnHireJanitor">Hire Janitor (+$90/day)</button>
           <button id="btnAutoAssign">Auto Assign Stations</button>
         </div>
@@ -113,7 +114,7 @@
         <span class="pill" id="buildPill">Editing</span>
       </h2>
       <div class="body">
-        <div class="small">Pick a tool, then tap/click the floor. Drag items to reposition.</div>
+        <div class="small">Pick a tool, then tap/click the floor. Drag items to reposition. Stage 6 adds <b>kitchen equipment</b> (walk-in, dishwasher, extra cooktop).</div>
 
         <div class="hr"></div>
         <div class="buildTools">
@@ -122,6 +123,9 @@
           <button class="toolBtn" data-tool="prep">Add PREP Bench ($400)</button>
           <button class="toolBtn" data-tool="cook">Add COOK Line ($600)</button>
           <button class="toolBtn" data-tool="pass">Add PASS ($350)</button>
+          <button class="toolBtn" data-tool="walkin">Add Walk-In ($900)</button>
+          <button class="toolBtn" data-tool="dish">Add Dishwasher ($650)</button>
+          <button class="toolBtn" data-tool="extra">Add Extra Cooktop ($500)</button>
         </div>
 
         <div class="hr"></div>
@@ -168,12 +172,47 @@
       </div>
     </div>
 
+    
     <div class="card">
+      <h2><span>Reservations</span><span class="pill" id="resPill">—</span></h2>
+      <div class="body">
+        <div class="small">Balance <b>walk-ins vs bookings</b>. Hold tables for upcoming reservations to avoid VIP blowups.</div>
+
+        <div class="row" style="gap:10px; flex-wrap:wrap; margin-top:10px;">
+          <label class="small">Bookings % <b id="resPctLbl">55</b>%<br>
+            <input type="range" id="resPct" min="0" max="90" value="55" style="width:160px;">
+          </label>
+
+          <label class="small">VIP % <b id="vipPctLbl">6</b>%<br>
+            <input type="range" id="vipPct" min="0" max="20" value="6" style="width:160px;">
+          </label>
+
+          <label class="small">Overbook % <b id="overbookLbl">10</b>%<br>
+            <input type="range" id="overbookPct" min="0" max="30" value="10" style="width:160px;">
+          </label>
+        </div>
+
+        <div class="row" style="gap:10px; flex-wrap:wrap; margin-top:8px;">
+          <label class="small"><input type="checkbox" id="acceptWalkins" checked> Accept walk-ins</label>
+          <label class="small"><input type="checkbox" id="holdTables" checked> Hold tables for reservations</label>
+          <button id="btnRegenerateRes">Regenerate bookings (today)</button>
+        </div>
+
+        <div class="small" style="margin-top:10px;">Upcoming (next 6):</div>
+        <div id="resList" class="ticketList"></div>
+      </div>
+    </div>
+
+<div class="card">
       <h2><span>Live Tickets</span><span class="pill" id="ticketCount">0</span></h2>
       <div class="body">
         <div class="row" style="justify-content:space-between; margin-bottom:8px;">
           <span class="small">86 Board: <b id="board86">None</b></span>
           <span class="pill" id="physPill">Tables 0 · Stations 0</span>
+        </div>
+        <div class="row" style="justify-content:space-between; margin-bottom:8px;">
+          <span class="small">Dishpit: <b id="dishText">Plates 0/0 · Dirty 0</b></span>
+          <span class="pill" id="bottlePill">Bottleneck: —</span>
         </div>
         <div class="ticketBox" id="tickets"></div>
         <div class="small">Build mode is disabled during service.</div>
@@ -187,7 +226,7 @@
 <script>
 /* ============================================================
    Restaurant Tycoon — Single-File Flat Pack
-   Stage 5: Build Mode / Layout Editing (tables + stations + expansions)
+   Stage 9: Reservations + Bookings + VIPs (tables + stations + expansions)
    - drag & drop
    - physical stations cap throughput (up to staff capacity)
    ============================================================ */
@@ -231,6 +270,36 @@ const DATA = {
   costCook: 600,
   costPass: 350,
 
+  // Kitchen equipment (Stage 6)
+  costWalkIn: 900,
+  costDish: 650,
+  costExtraCook: 500,
+
+  // Dishpit / plates (Stage 7)
+  platesBase: 44,
+  plateCostPerUse: 0.0,
+  plateShortagePenaltyPerSec: 0.0012,
+  washRateNoMachine: 0.18,     // plates/sec
+  washRatePerMachine: 0.62,    // plates/sec each dishwasher
+  dishOverflowDirtyFrac: 0.65, // if too many dirty plates pile up
+  dishOverflowCleanPenalty: 0.0018,
+
+  // FOH (Stage 9)
+  wageWaiterPerDay: 95,
+  fohOrderDelayBase: 2.4,
+  fohRunBase: 4.0,
+  fohMistakeBase: 0.035,
+  fohMistakeOverload: 0.085,
+  fohWrongRunPenaltySec: 10,
+  fohCompChanceOnWrong: 0.30,
+
+  // Reservations (Stage 9)
+  resHoldWindowSec: 22,
+  resLateGraceSec: 16,
+  resBaseNoShow: 0.09,
+  resVipBonus: 0.06,
+  resVipPenalty: 0.09,
+
   // Expansion scaling
   expandFloorBase: 1200,
   expandKitchenBase: 900,
@@ -273,6 +342,11 @@ function defaultLayout(){
       {id:"C1", type:"COOK", x:360,y:525},
       {id:"X1", type:"PASS", x:550,y:525},
     ],
+    equipment: [
+      {id:"W1", type:"WALKIN", x:520, y:585},
+      {id:"D1", type:"DISH",   x:300, y:585},
+      {id:"E1", type:"EXTRA_COOK", x:410, y:615}
+    ],
     expand: { floorLevel:0, kitchenLevel:0 }
   };
 }
@@ -291,6 +365,20 @@ const Game = {
   rating: 3.6,
   cleanliness: 0.92,
   janitors: 0,
+
+  // FOH
+  waiters: 2,
+
+  // reservations (Stage 9)
+  resSettings: { pct:55, vipPct:6, overbookPct:10, acceptWalkins:true, holdTables:true },
+  reservations: [],
+  heldTableIds: [],
+  resStats: { scheduled:0, seated:0, noShow:0, late:0 },
+
+  // plates / dishpit
+  platesTotal: 44,
+  platesClean: 44,
+  platesDirty: 0,
   wageJanitorPerDay: 90,
   cooks: [],
   wageCookPerDay: 120,
@@ -404,8 +492,9 @@ function freshStats(){
 }
 function applyDailyWages(){
   const cookWages = Game.cooks.reduce((s,c)=>s + (c.wage||Game.wageCookPerDay), 0);
+  const waiterWages = (Game.waiters||0) * DATA.wageWaiterPerDay;
   const janWages = Game.janitors * Game.wageJanitorPerDay;
-  const wages = cookWages + janWages;
+  const wages = cookWages + waiterWages + janWages;
   Game.cash -= wages;
   Game.stats.wages = wages;
 }
@@ -454,16 +543,70 @@ function doPrepToPar(){
 function stockFor(id){ return Math.max(0, Math.round(Game.stock[id] ?? 0)); }
 function endOfDaySpoilage(){
   let wasteCost=0;
+  const ec = equipCounts();
+  const base = DATA.spoilRate;
+  const walk = (ec.WALKIN||0);
+  const spoilRate = U.clamp(base - walk*0.04, 0.12, base);
   for(const d of DATA.menu){
     const left = stockFor(d.id);
     if(left<=0){ Game.carryStock[d.id]=0; continue; }
-    const spoiled = Math.round(left * DATA.spoilRate);
+    const spoiled = Math.round(left * spoilRate);
     const carry = Math.max(0, left - spoiled);
     wasteCost += spoiled * d.cost;
     Game.carryStock[d.id]=carry;
   }
   if(wasteCost>0) addCost(wasteCost);
   Game.stats.wasteCost = wasteCost;
+
+/* -------------------- Dishpit / Plates (Stage 9) -------------------- */
+function washRatePerSec(){
+  const ec = equipCounts();
+  const machines = (ec.DISH||0);
+  const base = (machines>0) ? (0.22 + machines*DATA.washRatePerMachine) : DATA.washRateNoMachine;
+  const jan = (Game.janitors||0);
+  return base * (1 + jan*0.06);
+}
+function processDishpit(dt){
+  const rate = washRatePerSec();
+  const wash = Math.min(Game.platesDirty, rate*dt);
+  Game.platesDirty = U.clamp(Game.platesDirty - wash, 0, Game.platesTotal);
+  Game.platesClean = U.clamp(Game.platesClean + wash, 0, Game.platesTotal);
+
+  const dirtyFrac = Game.platesDirty / Math.max(1, Game.platesTotal);
+  if(dirtyFrac > DATA.dishOverflowDirtyFrac){
+    const overflow = (dirtyFrac - DATA.dishOverflowDirtyFrac) / (1 - DATA.dishOverflowDirtyFrac);
+    Game.cleanliness = U.clamp(Game.cleanliness - overflow * DATA.dishOverflowCleanPenalty * dt * 60, 0, 1);
+  }
+}
+
+/* -------------------- FOH Helpers (Stage 8) -------------------- */
+function fohOverload(){
+  // 1.0 == balanced; >1 overloaded
+  const activeTables = Game.tables.filter(t=>t.occupied).length;
+  const w = Math.max(0, Game.waiters||0);
+  const cap = Math.max(1, w*4); // 1 waiter can reasonably cover ~4 tables in this abstract model
+  return activeTables / cap;
+}
+function fohOrderExtraDelay(){
+  const ov = fohOverload();
+  const base = DATA.fohOrderDelayBase;
+  return base * U.clamp(ov-0.9, 0, 2.5);
+}
+function fohRunDelayForParty(party){
+  const L = Game.layout;
+  const pickX = L.kitchenRect.x + L.kitchenRect.w - 90;
+  const pickY = L.kitchenRect.y + 60;
+  const tb = Game.tables.find(t=>t.id===party.tableId) || {x:pickX, y:pickY};
+  const dx = (tb.x+40) - pickX, dy = (tb.y+30) - pickY;
+  const dist = Math.sqrt(dx*dx+dy*dy);
+  const ov = fohOverload();
+  return (DATA.fohRunBase + dist/240) * (1 + U.clamp(ov-1, 0, 2.5)*0.55);
+}
+function fohWrongTableChance(){
+  const ov = fohOverload();
+  return U.clamp(DATA.fohMistakeBase + U.clamp(ov-1, 0, 3)*DATA.fohMistakeOverload, 0.01, 0.35);
+}
+
 }
 
 /* -------------------- Layout -> Runtime -------------------- */
@@ -471,25 +614,142 @@ function rebuildRuntimeFromLayout(){
   // tables runtime are derived from layout tables and occupied state
   Game.tables = Game.layout.tables.map(t=>({ id:t.id, x:t.x, y:t.y, seats:t.seats, occupied:0, party:null }));
 }
-function canSeatParty(size){ return Game.tables.some(t=>t.occupied===0 && t.seats>=size); }
+function heldSet(){
+  return new Set(Array.isArray(Game.heldTableIds)?Game.heldTableIds:[]);
+}
+function canSeatParty(size, isRes=false){
+  const hs = heldSet();
+  const hold = !!(Game.resSettings && Game.resSettings.holdTables);
+  return Game.tables.some(t=>{
+    if(t.occupied!==0) return false;
+    if(t.seats < size) return false;
+    if(!isRes && hold && hs.has(t.id)) return false;
+    return true;
+  });
+}
 function seatParty(p){
-  const t = Game.tables.find(x=>x.occupied===0 && x.seats>=p.size);
-  if(!t) return false;
+  const hs = heldSet();
+  const hold = !!(Game.resSettings && Game.resSettings.holdTables);
+
+  if(p.isReservation && p.reservedTableId){
+    const rt = Game.tables.find(x=>x.id===p.reservedTableId);
+    if(rt && rt.occupied===0 && rt.seats>=p.size){
+      rt.occupied = p.size; rt.party = p.id;
+      p.state="SEATED"; p.tableId=rt.id; p.seatedAt=Game.t; p.note="";
+      Game.resStats.seated += 1;
+      return true;
+    }
+  }
+
+  const candidates = Game.tables
+    .filter(t=>t.occupied===0 && t.seats>=p.size)
+    .filter(t=> (p.isReservation || !hold || !hs.has(t.id)));
+  if(!candidates.length) return false;
+  candidates.sort((a,b)=> (a.seats-b.seats) || (a.x-b.x));
+  const t = candidates[0];
+
+  if(!p.isReservation && hs.has(t.id)){
+    updateRating(-0.01);
+    Game.resStats.late += 1;
+  }
+
   t.occupied = p.size; t.party = p.id;
-  p.state="SEATED"; p.tableId=t.id; p.seatedAt=Game.t;
+  p.state="SEATED"; p.tableId=t.id; p.seatedAt=Game.t; p.note="";
+  if(p.isReservation) Game.resStats.seated += 1;
   return true;
 }
 function clearTable(id){ const t=Game.tables.find(x=>x.id===id); if(t){ t.occupied=0; t.party=null; } }
 
+
 /* -------------------- Guests -------------------- */
-function spawnGuestParty(){
-  const size = Math.random() < 0.7 ? 2 : 1;
-  const picky = Math.random() < 0.18;
-  const patience = U.rand(38, 80) * (picky?0.85:1.0);
-  const budget = U.rand(18, 55);
+function timeTag(t){
+  // map sim seconds to a dinner clock, 0..shiftSeconds => 17:00..20:00
+  const startMin = 17*60;
+  const endMin = 20*60;
+  const mins = startMin + (endMin-startMin) * (t / DATA.shiftSeconds);
+  const h = Math.floor(mins/60);
+  const m = Math.floor(mins%60);
+  return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");
+}
+function generateReservationsForToday(){
+  const set = Game.resSettings || { pct:55, vipPct:6, overbookPct:10, acceptWalkins:true, holdTables:true };
+  const tables = Game.tables || [];
+  const tableCount = tables.length || 0;
+  const pct = U.clamp((set.pct||55)/100, 0, 0.9);
+  const over = U.clamp((set.overbookPct||10)/100, 0, 0.3);
+  const vipP = U.clamp((set.vipPct||6)/100, 0, 0.2);
+
+  const expectedParties = Math.max(0, Math.round(tableCount * (1.05 + Math.random()*0.25)));
+  const targetRes = Math.round(expectedParties * pct * (1+over));
+
+  const res=[];
+  for(let i=0;i<targetRes;i++){
+    const size = (Math.random()<0.62)?2: (Math.random()<0.55?1:3);
+    const vip = Math.random() < vipP;
+    const at = U.rand(12, DATA.shiftSeconds-22);
+
+    const fits = tables.filter(t=>t.seats>=size).sort((a,b)=>(a.seats-b.seats));
+    const tableId = fits.length ? U.pick(fits).id : null;
+
+    const noShowBase = DATA.resBaseNoShow - (Game.rating-3.5)*0.015;
+    const noShow = Math.random() < U.clamp(noShowBase + (vip?0.01:0), 0.03, 0.22);
+
+    res.push({ id:"R"+U.uid(), at, size, vip, tableId, status:"SCHEDULED", noShow, spawned:false });
+  }
+  res.sort((a,b)=>a.at-b.at);
+  Game.reservations = res;
+  Game.resStats = { scheduled: res.length, seated:0, noShow:0, late:0 };
+  saveGame();
+}
+function updateHeldTables(){
+  const set = Game.resSettings || {};
+  if(!set.holdTables){ Game.heldTableIds = []; return; }
+  const hs = new Set();
+  for(const r of (Game.reservations||[])){
+    if(r.status!=="SCHEDULED" || r.spawned) continue;
+    if(!r.tableId) continue;
+    if(r.at - DATA.resHoldWindowSec <= Game.t && Game.t <= r.at + DATA.resLateGraceSec){
+      hs.add(r.tableId);
+    }
+  }
+  Game.heldTableIds = Array.from(hs);
+}
+function spawnReservationsNow(){
+  for(const r of (Game.reservations||[])){
+    if(r.status!=="SCHEDULED" || r.spawned) continue;
+    if(Game.t >= r.at){
+      r.spawned = true;
+      if(r.noShow){
+        r.status = "NOSHOW";
+        Game.resStats.noShow += 1;
+        updateRating(-0.01 - (r.vip?0.02:0));
+        continue;
+      }
+      r.status = "ARRIVED";
+      spawnGuestParty({ size:r.size, isReservation:true, vip:r.vip, tableId:r.tableId, arrivalAt:r.at });
+    }
+  }
+}
+
+function spawnGuestParty(opts={}){
+  // opts: { size, isReservation, vip, tableId, arrivalAt }
+  const size = opts.size ?? (Math.random() < 0.62 ? 2 : (Math.random()<0.6 ? 1 : 3));
+  const picky = opts.vip ? (Math.random() < 0.26) : (Math.random() < 0.18);
+  const patience = U.rand(38, 80) * (picky?0.85:1.0) * (opts.vip?1.05:1.0);
+  const budget = U.rand(18, 55) * (opts.vip?1.18:1.0);
   const id = "G"+U.uid();
   const pref = U.pick(["Fast","Comfort","Light","Premium"]);
-  Game.guests.push({ id,size,picky,patience,budget,pref, state:"WAITING", tableId:null, orderedAt:null, servedAt:null, dishId:null, satisfaction:1.0, note:"" });
+  Game.guests.push({
+    id,size,picky,patience,budget,pref,
+    isReservation: !!opts.isReservation,
+    vip: !!opts.vip,
+    reservedTableId: opts.tableId ?? null,
+    _arrivedAt: opts.arrivalAt ?? Game.t,
+    state:"WAITING",
+    orderedAt:null, seatedAt:null, servedAt:null, dishId:null,
+    satisfaction:1.0,
+    note: opts.isReservation ? (opts.vip ? "VIP booking" : "Booking") : ""
+  });
 }
 function chooseDish(party, allowOut=false){
   const pool = DATA.menu
@@ -522,6 +782,13 @@ function physCounts(){
   }
   return c;
 }
+function equipCounts(){
+  const e = {WALKIN:0, DISH:0, EXTRA_COOK:0};
+  for(const x of (Game.layout.equipment||[])){
+    if(e[x.type]!=null) e[x.type] += 1;
+  }
+  return e;
+}
 function stationProfile(station){
   const assigned = Game.cooks.filter(c=>c.assign===station);
   const floats = Game.cooks.filter(c=>c.assign==="FLOAT");
@@ -547,7 +814,13 @@ function stationProfile(station){
 
   // Physical cap (build mode)
   const pc = physCounts();
+  const ec = equipCounts();
   const phys = pc[station] || 0;
+  // Equipment bonuses
+  if(station==="COOK" && (ec.EXTRA_COOK||0)>0){
+    const b = Math.min(ec.EXTRA_COOK, 3);
+    speed *= (1 + b*0.07);
+  }
   if(phys <= 0){
     // no physical station: you "improvise" (slow + error-prone)
     staffCap = 1;
@@ -599,6 +872,7 @@ function createTicket(party, dish, opts={}){
 
   const t = {
     id:"K"+U.uid(),
+    platesNeeded: Math.max(1, party.size||1),
     partyId:party.id,
     dishId:dish.id,
     dishName:dish.name,
@@ -717,9 +991,31 @@ function processStations(dt){
 }
 function finalizeReadyTickets(){
   for(const ticket of Game.tickets){
-    if(ticket.status !== "READY" || ticket._served) continue;
+    if((ticket.status !== "READY" && ticket.status !== "WAIT_PLATES" && ticket.status !== "RUNNING") || ticket._served) continue;
     const party = Game.guests.find(g=>g.id===ticket.partyId);
     if(!party){ ticket._served=true; continue; }
+
+    // Plate gate (Stage 7): you can't send food without clean plates
+    const needPlates = Math.max(1, ticket.platesNeeded||1);
+    if(Game.platesClean < needPlates){
+      ticket.status = "WAIT_PLATES";
+      ticket._plateWait = true;
+      const waited = Game.t - (ticket.finishedAt ?? Game.t);
+      if(waited > 0) updateRating(-DATA.plateShortagePenaltyPerSec * Math.min(waited, 6));
+      continue;
+    }
+    // allocate plates now; they become dirty when the party leaves
+    Game.platesClean = U.clamp(Game.platesClean - needPlates, 0, Game.platesTotal);
+    party.platesUsed = (party.platesUsed||0) + needPlates;
+
+    // FOH run (Stage 8)
+    if(ticket.status !== "RUNNING"){
+      ticket.status = "RUNNING";
+      ticket.runDue = Game.t + fohRunDelayForParty(party);
+      party.state = "WAIT_RUN";
+      party.note = "Food is on the pass";
+      continue;
+    }
 
     const wait = (ticket.finishedAt ?? Game.t) - ticket.orderedAt;
     Game.stats.waitTotal += wait; Game.stats.waitCount += 1;
@@ -790,6 +1086,11 @@ function startService(){
   Game.stats=freshStats();
   Game._disruptionUntil = 0;
 
+  // plates baseline
+  if(!Game.platesTotal || Game.platesTotal < 10) Game.platesTotal = DATA.platesBase;
+  Game.platesClean = U.clamp(Math.round(Game.platesClean ?? Game.platesTotal), 0, Game.platesTotal);
+  Game.platesDirty = U.clamp(Math.round(Game.platesDirty ?? 0), 0, Game.platesTotal);
+
   // runtime layout derived
   rebuildRuntimeFromLayout();
   initStationsRuntime();
@@ -822,6 +1123,11 @@ function endService(){
 function updateSim(dt){
   Game.cleanliness = U.clamp(Game.cleanliness - DATA.cleanlinessDecay*dt, 0, 1);
   if(Game.janitors>0) Game.cleanliness = U.clamp(Game.cleanliness + (0.0085*Game.janitors)*dt, 0, 1);
+  const ec = equipCounts();
+  if((ec.DISH||0)>0) Game.cleanliness = U.clamp(Game.cleanliness + (0.0065*(ec.DISH))*dt, 0, 1);
+
+  // dishpit / plates
+  processDishpit(dt);
 
   // spawn based on table count
   const tableCount = Game.tables.length || 1;
@@ -834,8 +1140,13 @@ function updateSim(dt){
   Game.spawnAcc += spawn * dt;
   while(Game.spawnAcc >= 1){
     Game.spawnAcc -= 1;
-    if(canSeatParty(2) || canSeatParty(1)) spawnGuestParty();
+    const accept = !!(Game.resSettings && Game.resSettings.acceptWalkins);
+    if(accept && (canSeatParty(2,false) || canSeatParty(1,false))) spawnGuestParty({isReservation:false});
   }
+
+  // Reservations
+  spawnReservationsNow();
+  updateHeldTables();
 
   for(const party of Game.guests){
     if(party.state==="WAITING"){
@@ -892,6 +1203,11 @@ function updateSim(dt){
 
     if(party.state==="EATING" && Game.t >= party._leaveAt){
       party.state="DONE";
+      const used = Math.round(party.platesUsed||0);
+      if(used>0){
+        Game.platesDirty = U.clamp(Game.platesDirty + used, 0, Game.platesTotal);
+        party.platesUsed = 0;
+      }
       if(party.tableId) clearTable(party.tableId);
     }
   }
@@ -912,12 +1228,18 @@ function setTool(t){
 function insideRect(x,y,r){ return x>=r.x && y>=r.y && x<=r.x+r.w && y<=r.y+r.h; }
 function clampToRect(item, kind){
   const r = (kind==="table") ? Game.layout.diningRect : Game.layout.kitchenRect;
-  const w = (kind==="table") ? 90 : 110;
+  const w = (kind==="table") ? 90 : (kind==="station" ? 110 : 100);
   const h = (kind==="table") ? 60 : 60;
   item.x = U.clamp(item.x, r.x+6, r.x + r.w - w - 6);
   item.y = U.clamp(item.y, r.y+6, r.y + r.h - h - 6);
 }
 function pickItemAt(x,y){
+  // equipment top priority
+  for(let i=(Game.layout.equipment||[]).length-1;i>=0;i--){
+    const e = Game.layout.equipment[i];
+    const w=110, h=60;
+    if(x>=e.x && y>=e.y && x<=e.x+w && y<=e.y+h) return {kind:"equip", id:e.id};
+  }
   // stations top priority
   for(let i=Game.layout.stations.length-1;i>=0;i--){
     const s = Game.layout.stations[i];
@@ -935,6 +1257,7 @@ function getSelectedObj(){
   if(!Game.selected) return null;
   if(Game.selected.kind==="table") return Game.layout.tables.find(t=>t.id===Game.selected.id);
   if(Game.selected.kind==="station") return Game.layout.stations.find(s=>s.id===Game.selected.id);
+  if(Game.selected.kind==="equip") return (Game.layout.equipment||[]).find(e=>e.id===Game.selected.id);
   return null;
 }
 function selectItem(sel){
@@ -958,8 +1281,16 @@ function selectItem(sel){
     document.getElementById("tableProps").style.display="";
     document.getElementById("stationProps").style.display="none";
     document.getElementById("inpSeats").value = String(obj.seats);
-  }else{
+  }else if(sel.kind==="station"){
     document.getElementById("propTitle").textContent = "Station "+obj.id;
+    document.getElementById("propSub").textContent = "Kitchen";
+    document.getElementById("propPill").textContent = obj.type;
+    document.getElementById("stationTypePill").textContent = obj.type;
+    document.getElementById("tableProps").style.display="none";
+    document.getElementById("stationProps").style.display="";
+  }else{
+    // equipment
+    document.getElementById("propTitle").textContent = "Equipment "+obj.id;
     document.getElementById("propSub").textContent = "Kitchen";
     document.getElementById("propPill").textContent = obj.type;
     document.getElementById("stationTypePill").textContent = obj.type;
@@ -994,15 +1325,36 @@ function addStationAt(type, x,y){
   saveGame();
   toast(type+" station added.");
   return true;
+
+function addEquipmentAt(type, x,y){
+  let cost = (type==="WALKIN") ? DATA.costWalkIn : (type==="DISH" ? DATA.costDish : DATA.costExtraCook);
+  if(Game.cash < cost){ toast("Not enough cash for that equipment."); return false; }
+  if(!insideRect(x,y,Game.layout.kitchenRect)){ toast("Equipment must be placed in kitchen."); return false; }
+  Game.cash -= cost;
+  const prefix = (type==="WALKIN") ? "W" : (type==="DISH" ? "D" : "E");
+  const n = (Game.layout.equipment||[]).filter(e=>e.type===type).length + 1;
+  const id = prefix + n;
+  const e = {id, type, x:x-50, y:y-30};
+  clampToRect(e, "equip");
+  if(!Game.layout.equipment) Game.layout.equipment = [];
+  Game.layout.equipment.push(e);
+  saveGame();
+  toast(type==="EXTRA_COOK" ? "Extra cooktop added." : (type==="DISH" ? "Dishwasher added." : "Walk-in added."));
+  return true;
+}
+
 }
 function deleteSelected(){
   if(!Game.selected) return;
   if(Game.selected.kind==="table"){
     const idx = Game.layout.tables.findIndex(t=>t.id===Game.selected.id);
     if(idx>=0) Game.layout.tables.splice(idx,1);
-  }else{
+  }else if(Game.selected.kind==="station"){
     const idx = Game.layout.stations.findIndex(s=>s.id===Game.selected.id);
     if(idx>=0) Game.layout.stations.splice(idx,1);
+  }else{
+    const idx = (Game.layout.equipment||[]).findIndex(e=>e.id===Game.selected.id);
+    if(idx>=0) Game.layout.equipment.splice(idx,1);
   }
   Game.selected = null;
   selectItem(null);
@@ -1046,7 +1398,8 @@ function buildStaffUI(){
   el.innerHTML = "";
   const cov = stationCoverage();
   const pc = physCounts();
-  document.getElementById("staffPill").textContent = `Cooks ${Game.cooks.length} · Phys PREP ${pc.PREP} COOK ${pc.COOK} PASS ${pc.PASS}`;
+  const ec = equipCounts();
+  document.getElementById("staffPill").textContent = `Cooks ${Game.cooks.length} · Waiters ${Game.waiters||0} · Phys PREP ${pc.PREP} COOK ${pc.COOK} PASS ${pc.PASS} · Equip W ${ec.WALKIN} D ${ec.DISH} E ${ec.EXTRA_COOK}`;
 
   for(const c of Game.cooks){
     const sp=pct(c.skills.PREP), sc=pct(c.skills.COOK), sa=pct(c.skills.PASS), fat=pct(c.fatigue);
@@ -1090,7 +1443,7 @@ function updateTicketsUI(){
     const prog = U.clamp((t.stepIndex) / (t.steps.length || 1), 0, 1);
     const q = ticketQualityEstimate(t);
 
-    const warn = (waited>40 || q<0.55 || t.mistakes>0 || t.emergency) ? " style='border-color:#7a2d33;'" : "";
+    const warn = (waited>40 || q<0.55 || t.mistakes>0 || t.emergency || t.status==="WAIT_PLATES") ? " style='border-color:#7a2d33;'" : "";
     box.insertAdjacentHTML("beforeend", `
       <div class="ticket"${warn}>
         <div class="top">
@@ -1159,7 +1512,64 @@ function updateUI(){
   document.getElementById("ticketCount").textContent = String(Game.tickets.filter(t=>!t._served).length);
 
   const pc = physCounts();
-  document.getElementById("physPill").textContent = `Tables ${Game.layout.tables.length} · Phys PREP ${pc.PREP} COOK ${pc.COOK} PASS ${pc.PASS}`;
+  const ec = equipCounts();
+  document.getElementById("physPill").textContent = `Tables ${Game.layout.tables.length} · Phys PREP ${pc.PREP} COOK ${pc.COOK} PASS ${pc.PASS} · Equip W ${ec.WALKIN} D ${ec.DISH} E ${ec.EXTRA_COOK}`;
+
+  // Dishpit UI (Stage 9)
+  const rate = washRatePerSec();
+  document.getElementById("dishText").textContent =
+    `Plates ${Math.floor(Game.platesClean)}/${Game.platesTotal} · Dirty ${Math.floor(Game.platesDirty)} · Wash ${(rate*60).toFixed(0)}/min`;
+
+  // Bottleneck detection
+  let worst = {name:"—", score:0};
+  if(Game.mode==="SERVICE"){
+    for(const sid of DATA.stations){
+      const st = Game.stationsRuntime[sid];
+      const prof = st.profile || {capacity:1};
+      const cap = Math.max(1, prof.capacity||1);
+      const score = (st.queue.length + st.active.length) / cap;
+      if(score > worst.score) worst = {name:sid, score};
+    }
+    // FOH load (Stage 8)
+    const seated = Game.guests.filter(g=>g.state==="SEATED" || g.state==="ORDERED" || g.state==="EATING" || g.state==="WAIT_RUN" || g.state==="READY_ORDER").length;
+    const fohCap = Math.max(1, (Game.waiters||0) * 3.2);
+    const fohScore = seated / fohCap;
+    if(fohScore > worst.score) worst = {name:"FOH", score:fohScore};
+
+    const plateScore = (Game.platesClean <= 2) ? (3.5 + (Game.platesDirty/Game.platesTotal)*2) : 0;
+    if(plateScore > worst.score) worst = {name:"DISH PIT", score:plateScore};
+  }
+  document.getElementById("bottlePill").textContent =
+    (worst.name==="—") ? "Bottleneck: —" : `Bottleneck: ${worst.name} (${worst.score.toFixed(1)}×)`;
+
+  // Reservations UI list (Stage 9)
+  if(document.getElementById("resList")){
+    const rs = (Game.reservations||[]);
+    const upcoming = rs.filter(r=> (r.status==="SCHEDULED" || r.status==="ARRIVED") && (r.at >= Game.t-2)).slice(0,6);
+    document.getElementById("resPill").textContent =
+      `Today ${Game.resStats.scheduled||0} · Seated ${Game.resStats.seated||0} · No-show ${Game.resStats.noShow||0} · Held ${(Game.heldTableIds||[]).length}`;
+
+    const el = document.getElementById("resList");
+    el.innerHTML = "";
+    if(!upcoming.length){
+      el.innerHTML = `<div class="small" style="opacity:0.85;">No upcoming bookings.</div>`;
+    }else{
+      for(const r of upcoming){
+        const tag = r.vip ? "VIP" : "RES";
+        const st  = r.status;
+        el.insertAdjacentHTML("beforeend", `
+          <div class="ticket">
+            <div class="row" style="justify-content:space-between;">
+              <b>${timeTag(r.at)} · ${tag} party ${r.size}</b>
+              <span class="pill">${st}</span>
+            </div>
+            <div class="small">Table ${r.tableId||"—"} ${r.noShow && r.status==="SCHEDULED" ? "· (risk no-show)" : ""}</div>
+          </div>
+        `);
+      }
+    }
+  }
+  syncResUIToState();
 
   updateBuildUI();
   updateTicketsUI();
@@ -1174,6 +1584,13 @@ function saveGame(){
     rating:Game.rating,
     cleanliness:Game.cleanliness,
     janitors:Game.janitors,
+    waiters:Game.waiters,
+    resSettings:Game.resSettings,
+    reservations:Game.reservations,
+    resStats:Game.resStats,
+    platesTotal:Game.platesTotal,
+    platesClean:Game.platesClean,
+    platesDirty:Game.platesDirty,
     menuPrices:Game.menuPrices,
     parPlan:Game.parPlan,
     carryStock:Game.carryStock,
@@ -1198,6 +1615,12 @@ function loadGame(){
     Game.rating = s.rating ?? 3.6;
     Game.cleanliness = s.cleanliness ?? 0.92;
     Game.janitors = s.janitors ?? 0;
+    Game.platesTotal = s.platesTotal ?? DATA.platesBase;
+    Game.platesClean = s.platesClean ?? Game.platesTotal;
+    Game.platesDirty = s.platesDirty ?? 0;
+    Game.platesTotal = Math.max(10, Math.round(Game.platesTotal));
+    Game.platesClean = U.clamp(Math.round(Game.platesClean), 0, Game.platesTotal);
+    Game.platesDirty = U.clamp(Math.round(Game.platesDirty), 0, Game.platesTotal);
     Game.menuPrices = s.menuPrices ?? {};
     Game.parPlan = s.parPlan ?? {};
     Game.carryStock = s.carryStock ?? {};
@@ -1220,6 +1643,7 @@ function loadGame(){
       if(!Game.layout.expand) Game.layout.expand = {floorLevel:0,kitchenLevel:0};
       if(!Array.isArray(Game.layout.tables)) Game.layout.tables = defaultLayout().tables;
       if(!Array.isArray(Game.layout.stations)) Game.layout.stations = defaultLayout().stations;
+      if(!Array.isArray(Game.layout.equipment)) Game.layout.equipment = defaultLayout().equipment;
       if(!Game.layout.entry) Game.layout.entry = defaultLayout().entry;
     }else{
       Game.layout = defaultLayout();
@@ -1235,6 +1659,10 @@ function resetAll(){
   Object.assign(Game, {
     mode:"BUILD", building:true, running:false, paused:false, speedIdx:0,
     day:1, t:0, cash:420, rating:3.6, cleanliness:0.92, janitors:0,
+    waiters: 2,
+    resSettings: { pct:55, vipPct:6, overbookPct:10, acceptWalkins:true, holdTables:true },
+    reservations: [], heldTableIds: [], resStats: { scheduled:0, seated:0, noShow:0, late:0 },
+    platesTotal: DATA.platesBase, platesClean: DATA.platesBase, platesDirty: 0,
     menuPrices:{}, parPlan:{}, carryStock:{}, stock:{}, outOfStock:new Set(),
     guests:[], tickets:[], stationsRuntime:{}, stats:freshStats(), spawnAcc:0, reportOpen:false,
     layout: defaultLayout(),
@@ -1315,6 +1743,17 @@ function draw(){
     ctx.font=`${12*s}px system-ui`;
     ctx.fillText(t.id, x+8*s, y+18*s);
     const occ = (Game.mode==="SERVICE") ? (t.occupied||0) : 0;
+    // Held tables for upcoming reservations (Stage 9)
+    const hs = (Game.mode==="SERVICE") ? new Set(Game.heldTableIds||[]) : null;
+    const held = (hs && hs.has(t.id) && occ===0);
+    if(held){
+      ctx.strokeStyle = "rgba(255,210,91,0.85)";
+      ctx.lineWidth = 2.5*s;
+      ctx.beginPath(); ctx.roundRect(x-3*s,y-3*s,96*s,66*s,12*s); ctx.stroke();
+      ctx.fillStyle="rgba(255,210,91,0.9)";
+      ctx.font=`${10*s}px system-ui`;
+      ctx.fillText("HELD", x+52*s, y+18*s);
+    }
     const seats = t.seats || 2;
     for(let i=0;i<seats;i++){
       ctx.beginPath();
@@ -1338,6 +1777,23 @@ function draw(){
     ctx.fillText(`${stn.type}`, x+10*s, y+18*s);
     ctx.fillStyle="rgba(223,230,255,0.75)";
     ctx.fillText(`${stn.id}`, x+10*s, y+38*s);
+
+  // kitchen equipment (Stage 6)
+  for(const eq of (Game.layout.equipment||[])){
+    const x=eq.x*s, y=eq.y*s;
+    ctx.fillStyle="rgba(30,32,66,0.72)";
+    ctx.strokeStyle="rgba(123,220,255,0.28)";
+    if(Game.selected && Game.selected.kind==="equip" && Game.selected.id===eq.id) ctx.strokeStyle="rgba(123,220,255,0.85)";
+    ctx.lineWidth=2*s;
+    ctx.beginPath(); ctx.roundRect(x,y,110*s,60*s,12*s); ctx.fill(); ctx.stroke();
+    ctx.fillStyle="rgba(232,232,234,0.95)";
+    ctx.font=`${12*s}px system-ui`;
+    const label = (eq.type==="WALKIN") ? "WALK-IN" : (eq.type==="DISH" ? "DISH" : "EXTRA COOK");
+    ctx.fillText(label, x+10*s, y+20*s);
+    ctx.fillStyle="rgba(223,230,255,0.75)";
+    ctx.fillText(eq.id, x+10*s, y+40*s);
+  }
+
   }
 
   // runtime station load overlays in service
@@ -1506,6 +1962,21 @@ canvas.addEventListener("pointerdown", (e)=>{
     if(ok){ setTool("select"); selectItem({kind:"station", id: Game.layout.stations[Game.layout.stations.length-1].id}); }
     return;
   }
+  if(Game.tool === "walkin"){
+    const ok = addEquipmentAt("WALKIN", p.x, p.y);
+    if(ok){ setTool("select"); selectItem({kind:"equip", id: Game.layout.equipment[Game.layout.equipment.length-1].id}); }
+    return;
+  }
+  if(Game.tool === "dish"){
+    const ok = addEquipmentAt("DISH", p.x, p.y);
+    if(ok){ setTool("select"); selectItem({kind:"equip", id: Game.layout.equipment[Game.layout.equipment.length-1].id}); }
+    return;
+  }
+  if(Game.tool === "extra"){
+    const ok = addEquipmentAt("EXTRA_COOK", p.x, p.y);
+    if(ok){ setTool("select"); selectItem({kind:"equip", id: Game.layout.equipment[Game.layout.equipment.length-1].id}); }
+    return;
+  }
 });
 
 canvas.addEventListener("pointermove", (e)=>{
@@ -1583,6 +2054,59 @@ document.getElementById("btnPause").addEventListener("click", ()=>{
 document.getElementById("btnSpeed").addEventListener("click", ()=>{ Game.speedIdx = (Game.speedIdx+1) % Game.speedList.length; });
 document.getElementById("btnReset").addEventListener("click", ()=>resetAll());
 
+
+// Reservations UI (Stage 9)
+function syncResUIToState(){
+  const st = Game.resSettings || (Game.resSettings={ pct:55, vipPct:6, overbookPct:10, acceptWalkins:true, holdTables:true });
+  const pct = document.getElementById("resPct");
+  const vip = document.getElementById("vipPct");
+  const ob  = document.getElementById("overbookPct");
+  const aw  = document.getElementById("acceptWalkins");
+  const ht  = document.getElementById("holdTables");
+  if(pct){ pct.value = st.pct; document.getElementById("resPctLbl").textContent = st.pct; }
+  if(vip){ vip.value = st.vipPct; document.getElementById("vipPctLbl").textContent = st.vipPct; }
+  if(ob){  ob.value  = st.overbookPct; document.getElementById("overbookLbl").textContent = st.overbookPct; }
+  if(aw) aw.checked = !!st.acceptWalkins;
+  if(ht) ht.checked = !!st.holdTables;
+}
+function resUIListeners(){
+  const pct = document.getElementById("resPct");
+  const vip = document.getElementById("vipPct");
+  const ob  = document.getElementById("overbookPct");
+  const aw  = document.getElementById("acceptWalkins");
+  const ht  = document.getElementById("holdTables");
+  const regen = document.getElementById("btnRegenerateRes");
+
+  const upd = ()=>{
+    const st = Game.resSettings || (Game.resSettings={ pct:55, vipPct:6, overbookPct:10, acceptWalkins:true, holdTables:true });
+    if(pct) st.pct = Math.round(+pct.value);
+    if(vip) st.vipPct = Math.round(+vip.value);
+    if(ob)  st.overbookPct = Math.round(+ob.value);
+    if(aw)  st.acceptWalkins = !!aw.checked;
+    if(ht)  st.holdTables = !!ht.checked;
+
+    if(pct) document.getElementById("resPctLbl").textContent = st.pct;
+    if(vip) document.getElementById("vipPctLbl").textContent = st.vipPct;
+    if(ob)  document.getElementById("overbookLbl").textContent = st.overbookPct;
+
+    saveGame();
+    updateUI();
+  };
+
+  if(pct) pct.addEventListener("input", upd);
+  if(vip) vip.addEventListener("input", upd);
+  if(ob)  ob.addEventListener("input", upd);
+  if(aw)  aw.addEventListener("change", upd);
+  if(ht)  ht.addEventListener("change", upd);
+
+  if(regen) regen.addEventListener("click", ()=>{
+    if(Game.mode!=="SERVICE") buildRuntimeTablesFromLayout();
+    generateReservationsForToday();
+    toast("Bookings regenerated for today.");
+    updateUI();
+  });
+}
+
 document.getElementById("btnHireCook").addEventListener("click", ()=>{
   Game.cooks.push(createCook());
   toast("Hired a cook.");
@@ -1637,6 +2161,10 @@ function loop(){
   Game.stats = freshStats();
   loadGame();
   ensureDefaultCooks();
+
+  if(!Game.platesTotal || Game.platesTotal < 10){ Game.platesTotal = DATA.platesBase; }
+  if(Game.platesClean==null){ Game.platesClean = Game.platesTotal; }
+  if(Game.platesDirty==null){ Game.platesDirty = 0; }
 
   // defaults for pars
   for(const d of DATA.menu){
