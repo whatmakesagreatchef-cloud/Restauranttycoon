@@ -281,9 +281,6 @@ inventory:{
   perExtraBartender:{ soda:10, icedtea:9, mocktail:6, coffee:8 },
   lowThreshold:4
 },
-  perExtraCook:{ burger:4, pasta:3, salad:4, steak:2 },
-  lowThreshold:4
-},
   customerTypes: {
     REGULAR: { wRating:1.0, patienceMul:1.05, valueMul:0.95, cleanMul:0.95, picky:0.10, budgetMul:1.00 },
     FAMILY:  { wRating:1.1, patienceMul:0.92, valueMul:1.15, cleanMul:1.00, picky:0.12, budgetMul:0.95 },
@@ -2149,7 +2146,6 @@ function buildMenuPanel(){
     setPrice(id,v);
     buildMenuPanel();
   };
-}
 
   body.onclick=(e)=>{
     const btn=e.target.closest("button[data-act]"); if(!btn) return;
