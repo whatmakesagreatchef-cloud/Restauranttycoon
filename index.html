@@ -73,7 +73,7 @@
   <div class="right">
     <div class="card">
       <h2>
-        <span>Restaurant Tycoon — v2.1.3</span>
+        <span>Restaurant Tycoon — v2.1.4</span>
         <span class="pill" id="dayPill">Day 1</span>
       </h2>
       <div class="body">
@@ -871,47 +871,31 @@ function seatParty(p){
 
 /* -------------------- Dish selection (incl regular favourites) -------------------- */
 function chooseDish(p){
-  // returning regulars favour their favourite dish if available & affordable
-  if(p.customerId && p.returningRegular){
-    const reg = Game.regularsDB[p.customerId];
-    if(reg){
-      const fav = getDish(reg.favDishId);
-      if(fav){
-        const price = getPrice(fav.id);
-        const loyalty = reg.loyalty || 0.5;
-        const willOrderFav = Math.random() < U.clamp(0.35 + loyalty*0.45, 0.25, 0.85);
-        const affordable = price <= p.budget + 6;
-        const available = dishAvailable(fav.id);
-        if(willOrderFav && affordable && available) return fav;
-
-        if(willOrderFav && affordable && !available){
-          p.note = p.note || "Usual was 86'd";
-          p._stockoutFlag = true;
-        }
-      }
-    }
+  // Choose a food dish for the party. Must always return a valid dish object.
+  const full = (DATA.foodMenu && DATA.foodMenu.length) ? DATA.foodMenu : (DATA.menu || []);
+  if(!full.length){
+    // absolute fallback (should never happen)
+    return { id:"burger", name:"Burger & Chips", priceBase:24, cost:8.5, steps:[["PREP",5],["COOK",10],["PASS",3]], baseQuality:0.86, tag:"Fast" };
   }
 
-  const priced = DATA.menu.map(d=>({...d, price:getPrice(d.id)}));
-  const availablePool = priced.filter(d=>dishAvailable(d.id));
-  const pool0 = availablePool.length ? availablePool : priced;
+  // Build an available pool (in-stock). If everything is 86'd, fall back to full menu.
+  let pool = full.filter(d=>dishAvailable(d.id));
+  if(!pool.length) pool = full;
 
-  const options = pool0.filter(d=>d.price <= p.budget + 10);
-  const pool = options.length?options:pool0;
-
-  const weighted=[];
-  for(const d of pool){
-    let w=1;
-    if(d.tag===p.pref) w+=1.4;
-    if(d.price>p.budget) w-=0.35;
-    const stock = dishStock(d.id);
-    if(stock<=DATA.inventory.lowThreshold) w-=0.10;
-    weighted.push([d,w]);
+  // Regulars bias to their favourite if possible
+  if(p && p.customerId && p.returningRegular && Game.regularsDB && Game.regularsDB[p.customerId]){
+    const favId = Game.regularsDB[p.customerId].favDishId;
+    const fav = getDish(favId);
+    if(fav && (dishAvailable(fav.id) || Math.random()<0.25)) return fav;
   }
-  let sum=0; for(const [,w] of weighted) sum+=Math.max(0.05,w);
-  let r=Math.random()*sum;
-  for(const [d,w] of weighted){ r-=Math.max(0.05,w); if(r<=0) return getDish(d.id); }
-  return getDish(pool[0].id);
+
+  // Value-sensitive guests avoid expensive dishes when value flag is set
+  if(p && p._valueFlag){
+    const cheaper = pool.filter(d=>getPrice(d.id) <= (p.budget ?? 999));
+    if(cheaper.length) pool = cheaper;
+  }
+
+  return U.pick(pool) || pool[0] || full[0];
 }
 
 /* -------------------- Bookings -------------------- */
@@ -2449,7 +2433,7 @@ for(const d of allMenu()){
 
 /* -------------------- Save/Load -------------------- */
 function saveGame(){
-  localStorage.setItem("rtycoon_save_v213", JSON.stringify({
+  localStorage.setItem("rtycoon_save_v214", JSON.stringify({
     day:Game.day,cash:Game.cash,rating:Game.rating,cleanliness:Game.cleanliness,
     cooks:Game.cooks,cleaners:Game.cleaners,servers:Game.servers,runners:Game.runners,bartenders:Game.bartenders,
     skill:Game.skill,
@@ -2459,7 +2443,7 @@ function saveGame(){
   }));
 }
 function loadGame(){
-  const raw=localStorage.getItem("rtycoon_save_v213");
+  const raw=localStorage.getItem("rtycoon_save_v214");
   if(!raw) return false;
   try{
     const s=JSON.parse(raw);
@@ -2474,7 +2458,7 @@ function loadGame(){
   }catch{return false;}
 }
 function resetAll(){
-  localStorage.removeItem("rtycoon_save_v213");
+  localStorage.removeItem("rtycoon_save_v214");
   Game.day=1; Game.cash=420; Game.rating=3.6; Game.cleanliness=0.92;
   Game.cooks=3; Game.cleaners=0; Game.servers=1; Game.runners=1; Game.bartenders=1;
   Game.skill={cook:1.00, bar:1.00};
