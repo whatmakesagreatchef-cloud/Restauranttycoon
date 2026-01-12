@@ -73,7 +73,7 @@
   <div class="right">
     <div class="card">
       <h2>
-        <span>Restaurant Tycoon — v2.1</span>
+        <span>Restaurant Tycoon — v2.1.2</span>
         <span class="pill" id="dayPill">Day 1</span>
       </h2>
       <div class="body">
@@ -216,6 +216,31 @@
 <div class="toast" id="toast"></div>
 
 <script>
+function showFatalError(err){
+  try{
+    const msg = (err && err.stack) ? err.stack : String(err);
+    console.error(err);
+    const div=document.createElement("div");
+    div.style.position="fixed";
+    div.style.left="10px";
+    div.style.right="10px";
+    div.style.bottom="10px";
+    div.style.zIndex="99999";
+    div.style.padding="10px 12px";
+    div.style.background="#1b1b1b";
+    div.style.color="#fff";
+    div.style.border="1px solid rgba(255,255,255,.25)";
+    div.style.borderRadius="10px";
+    div.style.fontFamily="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace";
+    div.style.fontSize="12px";
+    div.innerHTML = "<b>Game error (JS stopped)</b><div style='opacity:.85;margin-top:6px;white-space:pre-wrap;max-height:160px;overflow:auto;'>" + msg.replace(/</g,"&lt;") + "</div>";
+    document.body.appendChild(div);
+  }catch(e){}
+}
+window.addEventListener("error", (e)=>showFatalError(e.error||e.message||e));
+window.addEventListener("unhandledrejection", (e)=>showFatalError(e.reason||e));
+
+
 /* ============================================================
    Restaurant Tycoon — Single File (v2.1)
    Adds:
@@ -2402,7 +2427,7 @@ for(const d of allMenu()){
 
 /* -------------------- Save/Load -------------------- */
 function saveGame(){
-  localStorage.setItem("rtycoon_save_v21", JSON.stringify({
+  localStorage.setItem("rtycoon_save_v212", JSON.stringify({
     day:Game.day,cash:Game.cash,rating:Game.rating,cleanliness:Game.cleanliness,
     cooks:Game.cooks,cleaners:Game.cleaners,servers:Game.servers,runners:Game.runners,bartenders:Game.bartenders,
     skill:Game.skill,
@@ -2412,7 +2437,7 @@ function saveGame(){
   }));
 }
 function loadGame(){
-  const raw=localStorage.getItem("rtycoon_save_v21");
+  const raw=localStorage.getItem("rtycoon_save_v212");
   if(!raw) return false;
   try{
     const s=JSON.parse(raw);
@@ -2427,7 +2452,7 @@ function loadGame(){
   }catch{return false;}
 }
 function resetAll(){
-  localStorage.removeItem("rtycoon_save_v21");
+  localStorage.removeItem("rtycoon_save_v212");
   Game.day=1; Game.cash=420; Game.rating=3.6; Game.cleanliness=0.92;
   Game.cooks=3; Game.cleaners=0; Game.servers=1; Game.runners=1; Game.bartenders=1;
   Game.skill={cook:1.00, bar:1.00};
@@ -2441,14 +2466,14 @@ function resetAll(){
 }
 
 /* -------------------- Controls -------------------- */
-document.getElementById("btnStart").addEventListener("click", ()=>startDay());
-document.getElementById("btnPause").addEventListener("click", ()=>{ if(Game.running) Game.paused=!Game.paused; });
-document.getElementById("btnSpeed").addEventListener("click", ()=>{ Game.speedIdx=(Game.speedIdx+1)%Game.speedList.length; });
-document.getElementById("btnReset").addEventListener("click", ()=>resetAll());
-document.getElementById("btnHireCook").addEventListener("click", ()=>{ Game.cooks+=1; saveGame(); toast("Hired a cook."); });
-document.getElementById("btnHireCleaner").addEventListener("click", ()=>{ Game.cleaners+=1; saveGame(); toast("Hired a cleaner."); });
-document.getElementById("btnHireServer").addEventListener("click", ()=>{ Game.servers+=1; saveGame(); toast("Hired a server."); });
-document.getElementById("btnHireRunner").addEventListener("click", ()=>{ Game.runners+=1; saveGame(); toast("Hired a runner."); });
+document.getElementById("btnStart")?.addEventListener("click", ()=>startDay());
+document.getElementById("btnPause")?.addEventListener("click", ()=>{ if(Game.running) Game.paused=!Game.paused; });
+document.getElementById("btnSpeed")?.addEventListener("click", ()=>{ Game.speedIdx=(Game.speedIdx+1)%Game.speedList.length; });
+document.getElementById("btnReset")?.addEventListener("click", ()=>resetAll());
+document.getElementById("btnHireCook")?.addEventListener("click", ()=>{ Game.cooks+=1; saveGame(); toast("Hired a cook."); });
+document.getElementById("btnHireCleaner")?.addEventListener("click", ()=>{ Game.cleaners+=1; saveGame(); toast("Hired a cleaner."); });
+document.getElementById("btnHireServer")?.addEventListener("click", ()=>{ Game.servers+=1; saveGame(); toast("Hired a server."); });
+document.getElementById("btnHireRunner")?.addEventListener("click", ()=>{ Game.runners+=1; saveGame(); toast("Hired a runner."); });
 document.getElementById("btnHireBartender")?.addEventListener("click", ()=>{ 
   Game.bartenders+=1; saveGame(); toast("Hired a bartender."); 
 });
@@ -2460,12 +2485,12 @@ document.getElementById("btnTrain")?.addEventListener("click", ()=>{
   saveGame();
   toast("Training complete (+skill).");
 });
-document.getElementById("btnRush").addEventListener("click", ()=>{
+document.getElementById("btnRush")?.addEventListener("click", ()=>{
   if(!Game.running){ toast("Start service first, then hit Rush."); return; }
   for(let i=0;i<12;i++) spawnGuestParty();
   toast("Rush: big wave at the door!");
 });
-document.getElementById("walkinsToggle").addEventListener("change",(e)=>{
+document.getElementById("walkinsToggle")?.addEventListener("change",(e)=>{
   Game.acceptWalkins = !!e.target.checked;
   saveGame();
   toast(Game.acceptWalkins ? "Walk-ins ON" : "Walk-ins OFF");
