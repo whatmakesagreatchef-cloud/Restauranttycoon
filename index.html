@@ -57,8 +57,31 @@
     .legend{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
     .toggle{ display:flex; align-items:center; gap:8px; }
     .toggle input{ transform:scale(1.1); }
-    @media (max-width: 900px){
-      .wrap{ flex-direction:column; }
+    .canvasWrap{
+  border:1px solid #262b40;
+  border-radius:12px;
+  overflow:hidden;
+  background:radial-gradient(1100px 700px at 20% 10%, #1a2a3a 0%, #0b0d14 40%, #070810 100%);
+}
+.canvasWrap canvas{
+  display:block;
+  border:0;
+  background:transparent;
+}
+
+@media (max-width: 900px){
+  .wrap{ flex-direction:column; }
+  .right{ width:auto; max-width:none; }
+  .canvasWrap{
+    height:58vh;
+    overflow:auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  canvas{
+    width:930px;   /* world width */
+    height:660px;  /* world height */
+  }
+}
       .right{ width:auto; max-width:none; }
       canvas{ height:52vh; }
     }
@@ -67,13 +90,15 @@
 <body>
 <div class="wrap">
   <div class="left">
-    <canvas id="c" width="1100" height="700" aria-label="Restaurant map"></canvas>
+    <div class="canvasWrap">
+      <canvas id="c" width="1100" height="700" aria-label="Restaurant map"></canvas>
+    </div>
   </div>
 
   <div class="right">
     <div class="card">
       <h2>
-        <span>Restaurant Tycoon — v2.1.4</span>
+        <span>Restaurant Tycoon — v2.1.5</span>
         <span class="pill" id="dayPill">Day 1</span>
       </h2>
       <div class="body">
@@ -218,7 +243,8 @@
 <script>
 function showFatalError(err){
   try{
-    const msg = (err && err.stack) ? err.stack : String(err);
+    const msg = (err && (err.name||err.message)) ? (String(err.name||'Error')+': '+String(err.message||err)) : String(err);
+    const stack = (err && err.stack) ? err.stack : '';
     console.error(err);
     const div=document.createElement("div");
     div.style.position="fixed";
@@ -233,7 +259,7 @@ function showFatalError(err){
     div.style.borderRadius="10px";
     div.style.fontFamily="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace";
     div.style.fontSize="12px";
-    div.innerHTML = "<b>Game error (JS stopped)</b><div style='opacity:.85;margin-top:6px;white-space:pre-wrap;max-height:160px;overflow:auto;'>" + msg.replace(/</g,"&lt;") + "</div>";
+    div.innerHTML = "<b>Game error (JS stopped)</b><div style='opacity:.9;margin-top:6px;'>" + msg.replace(/</g,'&lt;') + "</div>" + (stack? ("<div style='opacity:.8;margin-top:6px;white-space:pre-wrap;max-height:160px;overflow:auto;'>"+ stack.replace(/</g,'&lt;') +"</div>") : "");
     document.body.appendChild(div);
   }catch(e){}
 }
@@ -1878,6 +1904,27 @@ if(p.state==="LEAVING"){
 /* -------------------- Rendering -------------------- */
 const canvas=document.getElementById("c");
 const ctx=canvas.getContext("2d");
+/* roundRect polyfill (iOS Safari compatibility) */
+(function(){
+  try{
+    if(typeof CanvasRenderingContext2D !== "undefined" && !CanvasRenderingContext2D.prototype.roundRect){
+      CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
+        r = (typeof r==="number") ? {tl:r,tr:r,br:r,bl:r} : (r||{tl:0,tr:0,br:0,bl:0});
+        const tl=r.tl||0, tr=r.tr||0, br=r.br||0, bl=r.bl||0;
+        this.moveTo(x+tl, y);
+        this.lineTo(x+w-tr, y);
+        this.quadraticCurveTo(x+w, y, x+w, y+tr);
+        this.lineTo(x+w, y+h-br);
+        this.quadraticCurveTo(x+w, y+h, x+w-br, y+h);
+        this.lineTo(x+bl, y+h);
+        this.quadraticCurveTo(x, y+h, x, y+h-bl);
+        this.lineTo(x, y+tl);
+        this.quadraticCurveTo(x, y, x+tl, y);
+        return this;
+      };
+    }
+  }catch(e){}
+})();
 let DPR=Math.max(1, Math.min(2, window.devicePixelRatio||1));
 function resizeCanvas(){
   const r=canvas.getBoundingClientRect();
@@ -2433,7 +2480,7 @@ for(const d of allMenu()){
 
 /* -------------------- Save/Load -------------------- */
 function saveGame(){
-  localStorage.setItem("rtycoon_save_v214", JSON.stringify({
+  localStorage.setItem("rtycoon_save_v215", JSON.stringify({
     day:Game.day,cash:Game.cash,rating:Game.rating,cleanliness:Game.cleanliness,
     cooks:Game.cooks,cleaners:Game.cleaners,servers:Game.servers,runners:Game.runners,bartenders:Game.bartenders,
     skill:Game.skill,
@@ -2443,7 +2490,7 @@ function saveGame(){
   }));
 }
 function loadGame(){
-  const raw=localStorage.getItem("rtycoon_save_v214");
+  const raw=localStorage.getItem("rtycoon_save_v215");
   if(!raw) return false;
   try{
     const s=JSON.parse(raw);
@@ -2458,7 +2505,7 @@ function loadGame(){
   }catch{return false;}
 }
 function resetAll(){
-  localStorage.removeItem("rtycoon_save_v214");
+  localStorage.removeItem("rtycoon_save_v215");
   Game.day=1; Game.cash=420; Game.rating=3.6; Game.cleanliness=0.92;
   Game.cooks=3; Game.cleaners=0; Game.servers=1; Game.runners=1; Game.bartenders=1;
   Game.skill={cook:1.00, bar:1.00};
@@ -2525,7 +2572,7 @@ function loop(){
     updateSim(sdt);
   }
   updateUI();
-  draw();
+  try{ draw(); }catch(e){ showFatalError(e); Game._drawFailed=true; }
   requestAnimationFrame(loop);
 }
 
