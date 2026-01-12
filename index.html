@@ -73,7 +73,7 @@
   <div class="right">
     <div class="card">
       <h2>
-        <span>Restaurant Tycoon — v2.1.2</span>
+        <span>Restaurant Tycoon — v2.1.3</span>
         <span class="pill" id="dayPill">Day 1</span>
       </h2>
       <div class="body">
@@ -617,14 +617,36 @@ function regularsList(){
   return arr;
 }
 function ensureRegularPool(){
-  // keep a pool of regulars in DB
-  const keys = Object.keys(Game.regularsDB);
-  if(keys.length >= 6) return;
-  for(let i=keys.length;i<6;i++){
-    const cid="C"+U.uid();
-    const name=U.pick(DATA.names);
-    const fav=U.pick(DATA.menu).id;
-    Game.regularsDB[cid]={name, favDishId:fav, loyalty:U.rand(0.35,0.65), visits:0, lastSat:0.6};
+  // Always have a small pool of regulars so the system can't crash.
+  Game.regularsDB = Game.regularsDB || {};
+  Game.regularOrder = Game.regularOrder || [];
+
+  const firstNames = (DATA.regularFirst && DATA.regularFirst.length) ? DATA.regularFirst
+    : ["Sam","Alex","Jordan","Taylor","Casey","Morgan","Riley","Jamie","Avery","Charlie","Jess","Luca","Mia","Noah","Kai"];
+  const lastNames  = (DATA.regularLast && DATA.regularLast.length) ? DATA.regularLast
+    : ["Ng","Smith","Lee","Brown","Patel","Garcia","Wilson","Johnson","Martin","Walker","Taylor","Harris","Wright","King","Clark"];
+
+  const target = 8;
+  while(Game.regularOrder.length < target){
+    const id = "R"+U.uid();
+    const fn = U.pick(firstNames) || "Guest";
+    const ln = U.pick(lastNames) || "";
+    const name = (fn + " " + ln).trim();
+
+    const fav = U.pick(DATA.foodMenu || []) || U.pick((DATA.menu||[])) || null;
+    const favId = fav ? fav.id : "burger";
+
+    const reg = {
+      id,
+      name,
+      favDishId: favId,
+      usualDrinkId: (U.pick(DATA.drinkMenu||[])||{id:"soda"}).id,
+      loyalty: U.rand(0.35, 0.75),
+      visits: 0,
+      lastSeenDay: 0
+    };
+    Game.regularsDB[id] = reg;
+    Game.regularOrder.push(id);
   }
 }
 function pickReturningRegular(){
@@ -2427,7 +2449,7 @@ for(const d of allMenu()){
 
 /* -------------------- Save/Load -------------------- */
 function saveGame(){
-  localStorage.setItem("rtycoon_save_v212", JSON.stringify({
+  localStorage.setItem("rtycoon_save_v213", JSON.stringify({
     day:Game.day,cash:Game.cash,rating:Game.rating,cleanliness:Game.cleanliness,
     cooks:Game.cooks,cleaners:Game.cleaners,servers:Game.servers,runners:Game.runners,bartenders:Game.bartenders,
     skill:Game.skill,
@@ -2437,7 +2459,7 @@ function saveGame(){
   }));
 }
 function loadGame(){
-  const raw=localStorage.getItem("rtycoon_save_v212");
+  const raw=localStorage.getItem("rtycoon_save_v213");
   if(!raw) return false;
   try{
     const s=JSON.parse(raw);
@@ -2452,7 +2474,7 @@ function loadGame(){
   }catch{return false;}
 }
 function resetAll(){
-  localStorage.removeItem("rtycoon_save_v212");
+  localStorage.removeItem("rtycoon_save_v213");
   Game.day=1; Game.cash=420; Game.rating=3.6; Game.cleanliness=0.92;
   Game.cooks=3; Game.cleaners=0; Game.servers=1; Game.runners=1; Game.bartenders=1;
   Game.skill={cook:1.00, bar:1.00};
