@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Restaurant Tycoon — Flat Pack (Pacing + Regulars v2.1)</title>
+  <title>Restaurant Tycoon — Build/Operate v2.3.1</title>
   <style>
     :root{
       --bg:#0f1115; --panel:#171a21; --panel2:#11131a; --text:#e8e8ea; --muted:#a6a6ad;
@@ -57,26 +57,74 @@
     .legend{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
     .toggle{ display:flex; align-items:center; gap:8px; }
     .toggle input{ transform:scale(1.1); }
-    @media (max-width: 900px){
-      .wrap{ flex-direction:column; }
+    .canvasWrap{
+  border:1px solid #262b40;
+  border-radius:12px;
+  overflow:hidden;
+  background:radial-gradient(1100px 700px at 20% 10%, #1a2a3a 0%, #0b0d14 40%, #070810 100%);
+}
+.canvasWrap canvas{
+  display:block;
+  border:0;
+  background:transparent;
+}
+
+@media (max-width: 900px){
+  .wrap{ flex-direction:column; }
+  .right{ width:auto; max-width:none; }
+  .canvasWrap{
+    height:58vh;
+    overflow:auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  canvas{
+    width:930px;   /* world width */
+    height:660px;  /* world height */
+  }
+}
       .right{ width:auto; max-width:none; }
       canvas{ height:52vh; }
     }
-  </style>
+  .grid{ display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:8px; }
+.tblBtn{ padding:10px; border-radius:12px; border:1px solid #2a3050; background:#0f1320; color:var(--text); cursor:pointer; }
+.tblBtn.off{ opacity:.55; border-style:dashed; }
+.tblBtn small{ display:block; opacity:.8; margin-top:4px; }
+@media (max-width: 900px){
+  .grid{ grid-template-columns: repeat(3, minmax(0,1fr)); }
+}
+
+select{
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid #2a3050;
+  background:#0f1320;
+  color:var(--text);
+  outline:none;
+  min-width: 170px;
+}
+
+</style>
 </head>
 <body>
 <div class="wrap">
   <div class="left">
-    <canvas id="c" width="1100" height="700" aria-label="Restaurant map"></canvas>
+    <div class="canvasWrap">
+      <canvas id="c" width="1100" height="700" aria-label="Restaurant map"></canvas>
+    </div>
   </div>
 
   <div class="right">
     <div class="card">
       <h2>
-        <span>Restaurant Tycoon — v2.1.4</span>
+        <span>Restaurant Tycoon — v2.3.1</span>
         <span class="pill" id="dayPill">Day 1</span>
       </h2>
-      <div class="body">
+<div class="row" id="modeRow" style="margin-top:10px;">
+  <button id="btnModeBuild">Build</button>
+  <button class="primary" id="btnModeOperate">Operate</button>
+  <span class="pill" id="modePill">OPERATE</span>
+</div>
+<div class="body">
         <div class="row" style="align-items:center; justify-content:space-between;">
           <div class="pill">Shift: <span id="shiftTime">03:20</span></div>
           <div class="pill">Speed: <span id="speedText">1×</span></div>
@@ -148,7 +196,93 @@
         <div class="small" style="margin-top:8px;">
           New: <b>Complaints</b> you can resolve mid-service + <b>split bills & EFTPOS delays</b> + <b>runner prioritises drinks</b>.
         </div>
+      
+<div class="card" id="buildCard" style="display:none;">
+  <h2><span>Build Mode</span><span class="pill" id="buildPill">Day 0</span></h2>
+  <div class="body">
+    <div class="small">Spend cash to expand seating and upgrade stations. Build mode is best used <b>between services</b>.</div>
+
+    <div class="row" style="margin-top:10px;">
+      <div class="stat">
+        <div class="k">Open Tables</div>
+        <div class="v" id="openTablesTxt">0</div>
       </div>
+      <div class="stat">
+        <div class="k">Kitchen Lv</div>
+        <div class="v" id="kitchenLvTxt">0</div>
+      </div>
+      <div class="stat">
+        <div class="k">Bar Lv</div>
+        <div class="v" id="barLvTxt">0</div>
+      </div>
+      <div class="stat">
+        <div class="k">Decor Lv</div>
+        <div class="v" id="decorLvTxt">0</div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px; flex-wrap:wrap;">
+      <button id="btnAddTable">Add Table (+$200)</button>
+      <button id="btnRemoveTable">Remove Table (+$120)</button>
+      <button id="btnUpKitchen">Upgrade Kitchen (+$350)</button>
+      <button id="btnUpBar">Upgrade Bar (+$300)</button>
+      <button id="btnUpDecor">Upgrade Decor (+$250)</button>
+    </div>
+
+    <div class="small" style="margin-top:10px;">Tap tables to open/close them:</div>
+    <div class="grid" id="tableToggles"></div>
+
+    <div class="row" style="margin-top:10px;">
+      <button class="primary" id="btnJumpDining">Jump: Dining</button>
+      <button class="primary" id="btnJumpKitchen">Jump: Kitchen</button>
+      <button class="primary" id="btnJumpDoor">Jump: Door</button>
+    </div>
+
+<hr style="border:0;border-top:1px solid rgba(255,255,255,0.06); margin:12px 0;" />
+
+<div class="small"><b>Layout Editor</b> (tap the map)</div>
+<div class="row" style="margin-top:8px; flex-wrap:wrap;">
+  <select id="layoutTool">
+    <option value="MOVE_TABLE">Move table</option>
+    <option value="ROTATE_TABLE">Rotate table</option>
+    <option value="NEW_T2">Place 2-top</option>
+    <option value="NEW_T4">Place 4-top</option>
+    <option value="NEW_T6">Place 6-top</option>
+    <option value="DEL_TABLE">Delete table</option>
+    <option value="MOVE_KITCHEN">Move kitchen block</option>
+    <option value="MOVE_ENTRY">Move door/queue</option>
+    <option value="MOVE_PREP">Move PREP station</option>
+    <option value="MOVE_COOK">Move COOK station</option>
+    <option value="MOVE_PASS">Move PASS station</option>
+    <option value="MOVE_BAR">Move BAR station</option>
+    <option value="ZONE">Paint zone</option>
+    <option value="DEL_ZONE">Delete zone</option>
+  </select>
+
+  <select id="zoneType">
+    <option value="DECOR">Zone: Decor</option>
+    <option value="BLOCK">Zone: Blocked</option>
+  </select>
+
+  <button id="btnClearBuildSel">Clear</button>
+</div>
+<div class="small" id="layoutHint" style="margin-top:6px; opacity:.85;"></div>
+
+<div class="small" style="margin-top:10px;"><b>Station capacity</b> (more parallel tickets)</div>
+<div class="row" style="margin-top:8px; flex-wrap:wrap;">
+  <button id="btnCapPrep">+ Prep Bench (+$400)</button>
+  <button id="btnCapCook">+ Grill Station (+$500)</button>
+  <button id="btnCapPass">+ Pass Lamp (+$300)</button>
+  <button id="btnCapBar">+ Bar Well (+$450)</button>
+  <span class="pill" id="capPill">PREP 1 · COOK 1 · PASS 1 · BAR 1</span>
+</div>
+
+<div class="small" style="margin-top:10px;"><b>Zones</b></div>
+<div class="small" style="opacity:.8;">Decor zones boost table satisfaction. Blocked zones prevent placement.</div>
+<div class="regulars" id="zoneList" style="margin-top:8px;"></div>
+
+  </div>
+</div></div>
     </div>
 
     <div class="card">
@@ -218,7 +352,8 @@
 <script>
 function showFatalError(err){
   try{
-    const msg = (err && err.stack) ? err.stack : String(err);
+    const msg = (err && (err.name||err.message)) ? (String(err.name||'Error')+': '+String(err.message||err)) : String(err);
+    const stack = (err && err.stack) ? err.stack : '';
     console.error(err);
     const div=document.createElement("div");
     div.style.position="fixed";
@@ -233,7 +368,7 @@ function showFatalError(err){
     div.style.borderRadius="10px";
     div.style.fontFamily="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace";
     div.style.fontSize="12px";
-    div.innerHTML = "<b>Game error (JS stopped)</b><div style='opacity:.85;margin-top:6px;white-space:pre-wrap;max-height:160px;overflow:auto;'>" + msg.replace(/</g,"&lt;") + "</div>";
+    div.innerHTML = "<b>Game error (JS stopped)</b><div style='opacity:.9;margin-top:6px;'>" + msg.replace(/</g,'&lt;') + "</div>" + (stack? ("<div style='opacity:.8;margin-top:6px;white-space:pre-wrap;max-height:160px;overflow:auto;'>"+ stack.replace(/</g,'&lt;') +"</div>") : "");
     document.body.appendChild(div);
   }catch(e){}
 }
@@ -364,6 +499,32 @@ inventory:{
 
 };
 
+/* -------------------- Layout helpers ------------------ */
+function getLayout(){
+  // Base layout + optional build overrides (kitchen/stations/entry/etc).
+  // IMPORTANT: do NOT call getLayout() inside itself (would recurse on iOS Safari).
+  const base = DATA.layout;
+  const L = JSON.parse(JSON.stringify(base)); // safe deep clone for small object
+
+  const ov = (Game.build && Game.build.layout) ? Game.build.layout : null;
+  if(ov){
+    if(ov.kitchenRect) L.kitchenRect = Object.assign({}, L.kitchenRect, ov.kitchenRect);
+    if(ov.diningRect)  L.diningRect  = Object.assign({}, L.diningRect,  ov.diningRect);
+    if(ov.entry)       L.entry       = Object.assign({}, L.entry,       ov.entry);
+    if(ov.exit)        L.exit        = Object.assign({}, L.exit,        ov.exit);
+    if(ov.stations){
+      L.stations = Object.assign({}, L.stations, ov.stations);
+    }
+  }
+
+  // Keep tables in sync with runtime table positions
+  if(Game.tables && Array.isArray(Game.tables)){
+    L.tables = Game.tables.map(t=>({x:t.x,y:t.y,seats:t.seats}));
+  }
+
+  return L;
+}
+
 /* -------------------- State -------------------- */
 const Game = {
   running:false, paused:false,
@@ -446,8 +607,9 @@ function foodCostPctToday(){
 
 /* -------------------- Tables & Stations -------------------- */
 function initTables(){
-  Game.tables = DATA.layout.tables.map((p,i)=>({
+  Game.tables = getLayout().tables.map((p,i)=>({
     id:"T"+(i+1), x:p.x,y:p.y, seats:p.seats,
+    enabled: (Game.build && Array.isArray(Game.build.tableMask)) ? !!Game.build.tableMask[i] : true,
     occupied:0, party:null, dirty:0,
     expectedFreeAt:0,             // pacing: predicted table turnover
     holdForBookingId:null,        // pacing: reserved hold
@@ -464,7 +626,8 @@ function initStations(){
 }
 function stationCapacities(){
   // cooks boost PREP/COOK/PASS; bartenders boost BAR
-  const caps = { PREP:1, COOK:1, BAR:1, PASS:1 };
+  const base = (Game.build && Game.build.stationCap) ? Game.build.stationCap : {PREP:1,COOK:1,BAR:1,PASS:1};
+  const caps = { PREP: (base.PREP||1), COOK:(base.COOK||1), BAR:(base.BAR||1), PASS:(base.PASS||1) };
 
   const extraCooks = Math.max(0, Game.cooks-3);
   // spread extra cooks over PREP/COOK/PASS (not BAR)
@@ -478,10 +641,34 @@ function stationCapacities(){
 
   return caps;
 }
+function rectsOverlap(a,b){
+  return !(a.x+a.w < b.x || b.x+b.w < a.x || a.y+a.h < b.y || b.y+b.h < a.y);
+}
+function inBlockedZone(rect){
+  const zones = (Game.build && Array.isArray(Game.build.zones)) ? Game.build.zones : [];
+  for(const z of zones){
+    if(z.type==="BLOCK" && rectsOverlap(rect, z)) return true;
+  }
+  return false;
+}
+function decorBonusForTable(t){
+  const zones = (Game.build && Array.isArray(Game.build.zones)) ? Game.build.zones : [];
+  let bonus = 0;
+  const r = {x:t.x, y:t.y, w:90, h:60};
+  for(const z of zones){
+    if(z.type==="DECOR" && rectsOverlap(r, z)) bonus += 0.03;
+  }
+  return bonus;
+}
+function formatCaps(){
+  const c = stationCapacities();
+  return `PREP ${c.PREP||1} · COOK ${c.COOK||1} · PASS ${c.PASS||1} · BAR ${c.BAR||1}`;
+}
+
 
 /* -------------------- Staff pathing -------------------- */
 function initStaff(){
-  const L=DATA.layout;
+  const L=getLayout();
   Game.staff.servers = Array.from({length:Game.servers}, (_,i)=>({
     id:"SV"+(i+1), role:"SERVER", pos:{x:L.serverHome.x+U.rand(-6,6), y:L.serverHome.y+U.rand(-6,6)},
     state:"IDLE", target:{x:L.serverHome.x,y:L.serverHome.y}, busyUntil:0, partyId:null, tableId:null
@@ -510,7 +697,7 @@ function staffAvailable(list){ return list.find(a=>a.state==="IDLE"); }
 
 /* -------------------- Door queue + Host seating -------------------- */
 function queueSpots(){
-  const L=DATA.layout;
+  const L=getLayout();
   const spots=[];
   const base = {x:L.queueStart.x, y:L.queueStart.y};
   for(let i=0;i<18;i++){
@@ -548,7 +735,7 @@ function tableAvailableForParty(party){
 
 function processHost(dt){
   const H = Game.host;
-  const L = DATA.layout;
+  const L=getLayout();
 
   // host movement
   if(H.state==="MOVING"){
@@ -721,7 +908,7 @@ function spawnGuestParty(opts={}){
   const budget = U.rand(18,55)*t.budgetMul;
   const pref = U.pick(["Fast","Comfort","Light","Premium"]);
   const id="G"+U.uid();
-  const pos = {x:DATA.layout.entry.x + U.rand(-6,6), y:DATA.layout.entry.y + U.rand(-6,6)};
+  const pos = {x:getLayout().entry.x + U.rand(-6,6), y:getLayout().entry.y + U.rand(-6,6)};
   const party={
     id,size,type,picky,patience,budget,pref,
     isBooking:!!opts.isBooking,
@@ -729,7 +916,7 @@ function spawnGuestParty(opts={}){
     customerId, customerName,
     returningRegular:returning,
     state:"ARRIVING",
-    pos, target:{x:DATA.layout.host.x, y:DATA.layout.host.y},
+    pos, target:{x:getLayout().host.x, y:getLayout().host.y},
     tableId:null, dishId:null,
     seatedAt:null,
     orderedAt:null, serverAt:null,
@@ -762,6 +949,7 @@ function predictTableFreeAt(table){
 function bestTableFor(party, allowHeld=false){
   // can't use tables held for upcoming booking (unless party is that booking)
   const candidates = Game.tables.filter(t=>{
+    if(t.enabled===false) return false;
     if(t.occupied!==0) return false;
     if(!allowHeld && t.holdForBookingId && Game.t < t.holdUntil) return false;
     if(t.seats < party.size) return false;
@@ -831,7 +1019,7 @@ function seatParty(p){
   // if booking and a table is held for it, prefer that
   let t = null;
   if(p.isBooking && p.bookingId){
-    t = Game.tables.find(x=>x.holdForBookingId===p.bookingId && x.occupied===0);
+    t = Game.tables.find(x=>x.enabled!==false && x.holdForBookingId===p.bookingId && x.occupied===0);
     if(!t){
       // try any table even if held (because booking)
       t = bestTableFor(p, true);
@@ -1214,11 +1402,13 @@ function processStations(dt){
 
       const cleanFactor = U.clamp(1.0+(Game.cleanliness-0.85)*0.6, 0.72, 1.15);
       const skillFactor = (sid==="BAR") ? Game.skill.bar : Game.skill.cook;
+      const up = (Game.build||{});
+      const upgradeFactor = (sid==="BAR") ? (1 + 0.05*(up.barLevel||0)) : (1 + 0.05*(up.kitchenLevel||0));
 
       // Bottlenecks: if station queue is huge, stress slows a bit
       const pressure = U.clamp(1 - (st.queue.length/24)*0.12, 0.86, 1.0);
 
-      step.remaining -= dt * cleanFactor * skillFactor * pressure;
+      step.remaining -= dt * cleanFactor * skillFactor * upgradeFactor * pressure;
 
       if(step.remaining<=0){
         step.state="DONE";
@@ -1252,7 +1442,7 @@ function processCleaning(dt){
       if(Game.t >= cl._doneAt){
         if(t) t.dirty = U.clamp(t.dirty - 0.25, 0, 1);
         cl.state="RETURNING";
-        cl.target = {x:DATA.layout.cleanerHome.x, y:DATA.layout.cleanerHome.y};
+        cl.target = {x:getLayout().cleanerHome.x, y:getLayout().cleanerHome.y};
         cl.tableId=null;
       }
     }else if(cl.state==="RETURNING"){
@@ -1289,7 +1479,7 @@ ready.sort((a,b)=>{
     runner.state="TO_PICKUP";
     runner.ticketId=t.id;
     runner.partyId=party.id;
-    runner.target={x:DATA.layout.passPickup.x, y:DATA.layout.passPickup.y};
+    runner.target={x:getLayout().passPickup.x, y:getLayout().passPickup.y};
 
     t._delivered = true;
     if(t.kind==="DRINK") party.drinkReadyAt = party.drinkReadyAt ?? Game.t;
@@ -1304,9 +1494,9 @@ ready.sort((a,b)=>{
         const party = Game.guests.find(g=>g.id===r.partyId);
         if(party && party.tableId){
           const table = Game.tables.find(t=>t.id===party.tableId);
-          r.target = table ? {x:table.x+62, y:table.y+34} : {x:DATA.layout.host.x, y:DATA.layout.host.y};
+          r.target = table ? {x:table.x+62, y:table.y+34} : {x:getLayout().host.x, y:getLayout().host.y};
         }else{
-          r.target = {x:DATA.layout.host.x, y:DATA.layout.host.y};
+          r.target = {x:getLayout().host.x, y:getLayout().host.y};
         }
       }
     }else if(r.state==="TO_TABLE"){
@@ -1341,7 +1531,7 @@ if(sinceSeat <= 9){
           }
         }
         r.state="RETURNING";
-        r.target={x:DATA.layout.runnerHome.x, y:DATA.layout.runnerHome.y};
+        r.target={x:getLayout().runnerHome.x, y:getLayout().runnerHome.y};
       }
     }else if(r.state==="RETURNING"){
       const at=U.moveTowards(r.pos, r.target, 104, dt);
@@ -1376,7 +1566,7 @@ function processServers(dt){
           if(dr) createDrinkTicket(party, dr);
         }
         sv.state="RETURNING";
-        sv.target={x:DATA.layout.serverHome.x, y:DATA.layout.serverHome.y};
+        sv.target={x:getLayout().serverHome.x, y:getLayout().serverHome.y};
         sv.partyId=null; sv.tableId=null;
       }
     }else if(sv.state==="TO_TABLE_PAY"){
@@ -1439,10 +1629,10 @@ if((party.compAmount ?? 0) > 0){
           }
 
           party.state="LEAVING";
-          party.target={x:DATA.layout.exit.x, y:DATA.layout.exit.y};
+          party.target={x:getLayout().exit.x, y:getLayout().exit.y};
         }
         sv.state="RETURNING";
-        sv.target={x:DATA.layout.serverHome.x, y:DATA.layout.serverHome.y};
+        sv.target={x:getLayout().serverHome.x, y:getLayout().serverHome.y};
         sv.partyId=null; sv.tableId=null;
       }
     }else if(sv.state==="RETURNING"){
@@ -1462,7 +1652,7 @@ if((party.compAmount ?? 0) > 0){
         sv.partyId=p.id;
         sv.tableId=p.tableId;
         const table = Game.tables.find(t=>t.id===p.tableId);
-        sv.target = table ? {x:table.x+62, y:table.y+34} : {x:DATA.layout.host.x, y:DATA.layout.host.y};
+        sv.target = table ? {x:table.x+62, y:table.y+34} : {x:getLayout().host.x, y:getLayout().host.y};
         sv.state="TO_TABLE_PAY";
         continue;
       }
@@ -1479,7 +1669,7 @@ if((party.compAmount ?? 0) > 0){
         sv.partyId=p.id;
         sv.tableId=p.tableId;
         const table = Game.tables.find(t=>t.id===p.tableId);
-        sv.target = table ? {x:table.x+62, y:table.y+34} : {x:DATA.layout.host.x, y:DATA.layout.host.y};
+        sv.target = table ? {x:table.x+62, y:table.y+34} : {x:getLayout().host.x, y:getLayout().host.y};
         sv.state="TO_TABLE";
         p.state="ORDER_BEING_TAKEN";
       }
@@ -1575,7 +1765,10 @@ function starsToText(stars){
   return "★★★★★".slice(0,stars) + "☆☆☆☆☆".slice(0,5-stars);
 }
 function makeReview(p){
-  const sat = p.satisfaction ?? 0.6;
+  const decorBonus = 0.02 * ((Game.build||{}).decorLevel||0);
+  const tb = (p && p.tableId) ? Game.tables.find(t=>t.id===p.tableId) : null;
+  const zoneDecor = tb ? decorBonusForTable(tb) : 0;
+  const sat = U.clamp((p.satisfaction ?? 0.6) + decorBonus + zoneDecor, 0.1, 1.0);
   const stars = starsFromSat(sat);
   const dish = p.dishId ? getDish(p.dishId) : null;
   const dishName = dish ? dish.name : "Food";
@@ -1712,6 +1905,7 @@ function endDay(){
 
 /* -------------------- Simulation -------------------- */
 function updateSim(dt){
+  const L=getLayout();
   // cleanliness baseline
   Game.cleanliness = U.clamp(Game.cleanliness - DATA.cleanlinessDecay*dt, 0, 1);
   if(Game.cleaners>0) Game.cleanliness = U.clamp(Game.cleanliness + (0.0085*Game.cleaners)*dt, 0, 1);
@@ -1878,6 +2072,27 @@ if(p.state==="LEAVING"){
 /* -------------------- Rendering -------------------- */
 const canvas=document.getElementById("c");
 const ctx=canvas.getContext("2d");
+/* roundRect polyfill (iOS Safari compatibility) */
+(function(){
+  try{
+    if(typeof CanvasRenderingContext2D !== "undefined" && !CanvasRenderingContext2D.prototype.roundRect){
+      CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
+        r = (typeof r==="number") ? {tl:r,tr:r,br:r,bl:r} : (r||{tl:0,tr:0,br:0,bl:0});
+        const tl=r.tl||0, tr=r.tr||0, br=r.br||0, bl=r.bl||0;
+        this.moveTo(x+tl, y);
+        this.lineTo(x+w-tr, y);
+        this.quadraticCurveTo(x+w, y, x+w, y+tr);
+        this.lineTo(x+w, y+h-br);
+        this.quadraticCurveTo(x+w, y+h, x+w-br, y+h);
+        this.lineTo(x+bl, y+h);
+        this.quadraticCurveTo(x, y+h, x, y+h-bl);
+        this.lineTo(x, y+tl);
+        this.quadraticCurveTo(x, y, x+tl, y);
+        return this;
+      };
+    }
+  }catch(e){}
+})();
 let DPR=Math.max(1, Math.min(2, window.devicePixelRatio||1));
 function resizeCanvas(){
   const r=canvas.getBoundingClientRect();
@@ -1890,7 +2105,7 @@ function draw(){
   resizeCanvas();
   const w=canvas.width, h=canvas.height, s=DPR;
   ctx.clearRect(0,0,w,h);
-  const L=DATA.layout;
+  const L=getLayout();
 
   function zone(r, fill, stroke){
     ctx.fillStyle=fill; ctx.strokeStyle=stroke; ctx.lineWidth=2*s;
@@ -1900,9 +2115,23 @@ function draw(){
   zone(L.diningRect,"rgba(27,42,77,0.35)","rgba(123,220,255,0.18)");
   zone(L.kitchenRect,"rgba(31,59,43,0.35)","rgba(124,255,138,0.16)");
 
+  // custom zones (Build Mode)
+  const zlist = (Game.build && Array.isArray(Game.build.zones)) ? Game.build.zones : [];
+  for(const z of zlist){
+    const fill = (z.type==="DECOR") ? "rgba(124,255,138,0.10)" : "rgba(255,107,107,0.10)";
+    const stroke = (z.type==="DECOR") ? "rgba(124,255,138,0.22)" : "rgba(255,107,107,0.22)";
+    zone(z, fill, stroke);
+    ctx.fillStyle = (z.type==="DECOR") ? "rgba(124,255,138,0.8)" : "rgba(255,107,107,0.85)";
+    ctx.font=`${10*s}px system-ui`;
+    ctx.fillText(z.type, (z.x+8)*s, (z.y+16)*s);
+  }
+
+
   // tables (show holds)
   for(const t of Game.tables){
     const x=t.x*s, y=t.y*s;
+    const closed = (t.enabled===false);
+    const rot = (t.rot||0) * Math.PI/180;
     const dirt=t.dirty;
     const dirtTint = Math.floor(80 + dirt*120);
 
@@ -1910,7 +2139,16 @@ function draw(){
     ctx.fillStyle= held ? `rgba(90,90,120,0.75)` : `rgba(${dirtTint},42,27,0.78)`;
     ctx.strokeStyle= held ? "rgba(123,220,255,0.35)" : (dirt>0.35 ? "rgba(255,107,107,0.28)" : "rgba(255,209,102,0.25)");
     ctx.lineWidth=2*s;
-    ctx.beginPath(); ctx.roundRect(x,y,90*s,60*s,10*s); ctx.fill(); ctx.stroke();
+    // table body (rotatable)
+    const wT=90*s, hT=60*s;
+    const cx=x + wT/2, cy=y + hT/2;
+    const prevA=ctx.globalAlpha;
+    ctx.globalAlpha = closed ? prevA*0.35 : prevA;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(rot);
+    ctx.beginPath(); ctx.roundRect(-wT/2, -hT/2, wT, hT, 10*s); ctx.fill(); ctx.stroke();
+    ctx.restore();
 
     ctx.fillStyle="rgba(232,232,234,0.95)";
     ctx.font=`${12*s}px system-ui`;
@@ -1918,6 +2156,7 @@ function draw(){
     ctx.fillStyle="rgba(223,230,255,0.75)";
     ctx.font=`${10*s}px system-ui`;
     ctx.fillText(`${t.seats}-top`, x+50*s, y+18*s);
+    if(closed){ ctx.fillStyle="rgba(255,255,255,0.35)"; ctx.font=`${10*s}px system-ui`; ctx.fillText("CLOSED", x+8*s, y+34*s); }
 
     for(let i=0;i<t.seats;i++){
       ctx.beginPath();
@@ -1925,6 +2164,8 @@ function draw(){
       ctx.arc(x+(10+i*12)*s, y+42*s, 3.8*s, 0, Math.PI*2);
       ctx.fill();
     }
+
+    ctx.globalAlpha = prevA;
 
     if(held){
       ctx.fillStyle="rgba(223,230,255,0.95)";
@@ -2423,6 +2664,356 @@ for(const d of allMenu()){
   if(s<=0){ el.innerHTML = "<span class='badTxt'><b>86</b></span>"; }
   else if(s<=DATA.inventory.lowThreshold){ el.innerHTML = "<span class='warnTxt'><b>"+s+"</b></span>"; }
   else { el.textContent = String(s); }
+}function setMode(mode){
+  Game.mode = (mode==="BUILD") ? "BUILD" : "OPERATE";
+  const mp=document.getElementById("modePill"); if(mp) mp.textContent = Game.mode;
+  const bc=document.getElementById("buildCard"); if(bc) bc.style.display = (Game.mode==="BUILD") ? "" : "none";
+
+  // Disable service controls while building
+  const canService = (Game.mode==="OPERATE");
+  const s = document.getElementById("btnStart"); if(s) s.disabled = !canService || Game.serviceRunning;
+  const r = document.getElementById("btnRush");  if(r) r.disabled = !canService || Game.serviceRunning;
+
+  // If switching to build mid-service, pause safely
+  if(Game.mode==="BUILD" && Game.serviceRunning){
+    Game.serviceRunning=false;
+    const p=document.getElementById("btnPause"); if(p) p.disabled=true;
+  }
+
+  if(Game.mode==='BUILD'){ setLayoutTool(Game.build?.editTool||'MOVE_TABLE'); }
+  ensureBuildDefaults();
+  renderBuildPanel();
+  saveGame();
+}
+
+function countOpenTables(){
+  return Game.tables.filter(t=>t.enabled!==false).length;
+}
+
+function renderBuildPanel(){
+  const bc=document.getElementById("buildCard"); if(!bc) return;
+  const openTxt=document.getElementById("openTablesTxt");
+  const kTxt=document.getElementById("kitchenLvTxt");
+  const bTxt=document.getElementById("barLvTxt");
+  const dTxt=document.getElementById("decorLvTxt");
+  if(openTxt) openTxt.textContent = `${countOpenTables()} / ${Game.tables.length}`;
+  if(kTxt) kTxt.textContent = String((Game.build||{}).kitchenLevel||0);
+  if(bTxt) bTxt.textContent = String((Game.build||{}).barLevel||0);
+  if(dTxt) dTxt.textContent = String((Game.build||{}).decorLevel||0);
+
+  const grid=document.getElementById("tableToggles"); 
+  if(grid){
+    grid.innerHTML="";
+    for(const t of Game.tables){
+      const on = (t.enabled!==false);
+      const cls = on ? "tblBtn" : "tblBtn off";
+      grid.insertAdjacentHTML("beforeend", `<button class="${cls}" data-tid="${t.id}">${t.id}<small>${t.seats}-top</small></button>`);
+    }
+  }
+
+  const sel=document.getElementById('layoutTool'); if(sel) sel.value = (Game.build?.editTool||'MOVE_TABLE');
+  const zt=document.getElementById('zoneType'); if(zt) zt.value = (Game.build?.zoneType||'DECOR');
+  const cp=document.getElementById('capPill'); if(cp) cp.textContent = formatCaps();
+  renderZonesList();
+  updateLayoutHint();
+
+  // update build day pill
+  const bp=document.getElementById("buildPill"); if(bp) bp.textContent = `Day ${Math.max(0,(Game.day||1)-1)}`;
+}
+function renderZonesList(){
+  const el=document.getElementById("zoneList"); if(!el) return;
+  const zones = (Game.build && Array.isArray(Game.build.zones)) ? Game.build.zones : [];
+  if(!zones.length){ el.innerHTML = "<div class='small' style='opacity:.75'>No zones yet.</div>"; return; }
+  el.innerHTML = zones.map(z=>{
+    const name = z.type==="DECOR" ? "Decor" : "Blocked";
+    const col  = z.type==="DECOR" ? "rgba(124,255,138,0.18)" : "rgba(255,107,107,0.18)";
+    return `<div class="reg"><div><b>${name}</b> <span class="pill">${Math.round(z.w)}×${Math.round(z.h)}</span></div>
+              <div class="small" style="opacity:.75">x:${Math.round(z.x)} y:${Math.round(z.y)}</div></div>
+            <button data-zid="${z.id}" class="tblBtn" style="padding:10px 12px;">Delete</button>`;
+  }).join("");
+}
+
+function spend(cost){
+  if(Game.cash < cost){ toast("Not enough cash."); return false; }
+  Game.cash -= cost;
+  return true;
+}
+
+function addTable(){
+  const closed = Game.tables.find(t=>t.enabled===false);
+  if(!closed){ toast("All tables already open."); return; }
+  if(!spend(200)) return;
+  closed.enabled=true;
+  syncTableMask();
+  toast(`${closed.id} opened.`);
+  renderBuildPanel(); updateUI(); saveGame();
+}
+
+function removeTable(){
+  const open = Game.tables.filter(t=>t.enabled!==false);
+  if(open.length<=2){ toast("Keep at least 2 tables open."); return; }
+  const t = open[open.length-1];
+  if(t.occupied!==0){ toast("Can't close an occupied table."); return; }
+  Game.cash += 120;
+  t.enabled=false;
+  t.holdForBookingId=null; t.holdUntil=0;
+  syncTableMask();
+  toast(`${t.id} closed.`);
+  renderBuildPanel(); updateUI(); saveGame();
+}
+
+function upgrade(which){
+  const up = (Game.build||{});
+  if(which==="KITCHEN"){
+    const lvl=up.kitchenLevel||0;
+    const cost=350 + lvl*180;
+    if(lvl>=5){ toast("Kitchen at max."); return; }
+    if(!spend(cost)) return;
+    up.kitchenLevel=lvl+1;
+    toast(`Kitchen upgraded to Lv ${up.kitchenLevel}.`);
+  }
+  if(which==="BAR"){
+    const lvl=up.barLevel||0;
+    const cost=300 + lvl*160;
+    if(lvl>=5){ toast("Bar at max."); return; }
+    if(!spend(cost)) return;
+    up.barLevel=lvl+1;
+    toast(`Bar upgraded to Lv ${up.barLevel}.`);
+  }
+  if(which==="DECOR"){
+    const lvl=up.decorLevel||0;
+    const cost=250 + lvl*140;
+    if(lvl>=6){ toast("Decor at max."); return; }
+    if(!spend(cost)) return;
+    up.decorLevel=lvl+1;
+    toast(`Decor upgraded to Lv ${up.decorLevel}.`);
+  }
+  Game.build=up;
+  renderBuildPanel(); updateUI(); saveGame();
+}
+function buyCapUpgrade(which){
+  ensureBuildDefaults();
+  const up = Game.build.stationCap || (Game.build.stationCap={PREP:1,COOK:1,PASS:1,BAR:1});
+  const levels = up[which]||1;
+  const max = 5;
+  const costs = { PREP:400, COOK:500, PASS:300, BAR:450 };
+  const cost = costs[which] + (levels-1)*160;
+  if(levels>=max){ toast(`${which} capacity max.`); return; }
+  if(Game.cash < cost){ toast("Not enough cash."); return; }
+  Game.cash -= cost;
+  up[which] = levels + 1;
+  toast(`${which} capacity → ${up[which]}.`);
+  renderBuildPanel(); updateUI(); saveGame();
+}
+
+function syncTableMask(){
+  if(!Game.build) Game.build={};
+  Game.build.tableMask = Game.tables.map(t=>t.enabled!==false);
+}/* -------------------- Build: layout editor ------------------ */
+function setLayoutTool(v){
+  if(!Game.build) Game.build={};
+  Game.build.editTool = v || "MOVE_TABLE";
+  Game.build.selected = null;
+  const sel=document.getElementById("layoutTool"); if(sel) sel.value = Game.build.editTool;
+  updateLayoutHint();
+  saveGame();
+}
+
+function updateLayoutHint(){
+  const h=document.getElementById("layoutHint"); if(!h) return;
+  const t=Game.build?.editTool || "MOVE_TABLE";
+  const tips={
+    MOVE_TABLE:"Tap a table to select → tap where you want it.",
+    NEW_T2:"Tap the map to place a new 2-top (cost $200).",
+    NEW_T4:"Tap the map to place a new 4-top (cost $240).",
+    NEW_T6:"Tap the map to place a new 6-top (cost $280).",
+    DEL_TABLE:"Tap a table to delete (must be empty).",
+    MOVE_KITCHEN:"Tap where the kitchen block should move to (center).",
+    MOVE_ENTRY:"Tap where the door should be (moves queue + host).",
+    MOVE_PREP:"Tap where the PREP station should be.",
+    MOVE_COOK:"Tap where the COOK station should be.",
+    MOVE_PASS:"Tap where the PASS station should be.",
+    MOVE_BAR:"Tap where the BAR station should be.",
+    ROTATE_TABLE:"Tap a table to rotate it.",
+    ZONE:"Tap start corner → tap end corner to paint a zone.",
+    DEL_ZONE:"Tap inside a zone to delete it."
+  };
+  h.textContent = tips[t] || "Tap the map to place.";
+}
+
+function snap(n, g=10){ return Math.round(n/g)*g; }
+
+function canvasToWorld(ev){
+  const c=document.getElementById("c");
+  const r=c.getBoundingClientRect();
+  const cx = (ev.clientX - r.left);
+  const cy = (ev.clientY - r.top);
+  const x = cx * (c.width / r.width);
+  const y = cy * (c.height / r.height);
+  return {x, y};
+}
+
+function nearestTable(x,y){
+  let best=null, bd=1e9;
+  for(const t of Game.tables){
+    const dx=t.x-x, dy=t.y-y;
+    const d=dx*dx+dy*dy;
+    if(d<bd){ bd=d; best=t; }
+  }
+  return (best && bd<55*55) ? best : null;
+}
+
+function buyTableAt(seats, x, y){
+  const cost = seats===2 ? 200 : seats===4 ? 240 : 280;
+  if(Game.cash < cost){ toast("Not enough cash."); return; }
+  Game.cash -= cost;
+
+  if(inBlockedZone({x, y, w:90, h:60})){ toast('Blocked zone.'); return; }
+
+  const id="T"+(Game.tables.length+1);
+  const t={ id, x, y, seats, enabled:true, occupied:0, clean:1.0, holdForBookingId:null, holdUntil:0, state:"IDLE",
+            orders:[], bill:0, timer:0, payTimer:0, tip:0, rot:0, dirty:0 };
+  Game.tables.push(t);
+
+  syncTableMask();
+  renderBuildPanel(); updateUI(); saveGame();
+  toast(`${id} placed (${seats}-top).`);
+}
+
+function deleteTable(t){
+  if(!t){ toast("Tap a table."); return; }
+  if(t.occupied!==0){ toast("Table is occupied."); return; }
+  if(Game.tables.length<=2){ toast("Keep at least 2 tables."); return; }
+  // refund a bit
+  Game.cash += 120;
+  const idx = Game.tables.indexOf(t);
+  if(idx>=0) Game.tables.splice(idx,1);
+  // Re-number ids (optional) to keep tidy
+  Game.tables.forEach((tb,i)=>tb.id="T"+(i+1));
+  syncTableMask();
+  renderBuildPanel(); updateUI(); saveGame();
+  toast("Table removed.");
+}
+
+function moveKitchenTo(x,y){
+  const L=getLayout();
+  const w=L.kitchenRect.w, h=L.kitchenRect.h;
+  const nx = snap(x - w/2, 10);
+  const ny = snap(y - h/2, 10);
+  const rect={x:nx,y:ny,w,h};
+  if(inBlockedZone(rect)){ toast('Blocked zone.'); return; }
+  if(!Game.build.layout) Game.build.layout = {};
+  Game.build.layout.kitchenRect = {x:nx,y:ny,w,h};
+  // keep station offsets relative to kitchen for realism (optional small nudge)
+  renderBuildPanel(); saveGame();
+  toast("Kitchen moved.");
+}
+
+function moveEntryTo(x,y){
+  const L=getLayout();
+  const dx = x - L.entry.x;
+  const dy = y - L.entry.y;
+  if(!Game.build.layout) Game.build.layout = {};
+  Game.build.layout.entry = {x:snap(x,10), y:snap(y,10)};
+  // move related points with same delta
+  const shift=(pt)=>({x:snap(pt.x+dx,10), y:snap(pt.y+dy,10)});
+  Game.build.layout.queueStart = shift(L.queueStart);
+  Game.build.layout.host      = shift(L.host);
+  Game.build.layout.hostHome  = shift(L.hostHome);
+  Game.build.layout.serverHome= shift(L.serverHome);
+  renderBuildPanel(); saveGame();
+  toast("Door/queue moved.");
+}
+
+function moveStation(which, x, y){
+  if(!Game.build.layout) Game.build.layout = {};
+  if(!Game.build.layout.stations) Game.build.layout.stations = {};
+  const rx=snap(x,10), ry=snap(y,10);
+  if(inBlockedZone({x:rx,y:ry,w:120,h:70})){ toast('Blocked zone.'); return; }
+  Game.build.layout.stations[which] = {x:rx, y:ry};
+  renderBuildPanel(); saveGame();
+  toast(`${which} moved.`);
+}
+
+function onCanvasBuildTap(ev){
+  if(Game.mode!=="BUILD") return;
+  const tool = Game.build?.editTool || "MOVE_TABLE";
+  const p = canvasToWorld(ev);
+  const x=snap(p.x,10), y=snap(p.y,10);
+
+  if(tool==="MOVE_TABLE"){
+    if(!Game.build.selected){
+      const t=nearestTable(x,y);
+      if(!t){ toast("Tap closer to a table."); return; }
+      Game.build.selected = t.id;
+      toast(`${t.id} selected. Tap new spot.`);
+      return;
+    }
+    const t=Game.tables.find(tb=>tb.id===Game.build.selected);
+    if(!t){ Game.build.selected=null; return; }
+    if(t.occupied!==0){ toast("Can't move occupied table."); Game.build.selected=null; return; }
+    if(inBlockedZone({x, y, w:90, h:60})){ toast('Blocked zone.'); Game.build.selected=null; return; }
+    t.x=x; t.y=y;
+    Game.build.selected=null;
+    syncTableMask();
+    renderBuildPanel(); updateUI(); saveGame();
+    toast("Table moved.");
+    return;
+  }
+
+  if(tool==="NEW_T2") return buyTableAt(2,x,y);
+  if(tool==="NEW_T4") return buyTableAt(4,x,y);
+  if(tool==="NEW_T6") return buyTableAt(6,x,y);
+
+  if(tool==="ROTATE_TABLE"){
+    const t=nearestTable(x,y);
+    if(!t){ toast('Tap a table.'); return; }
+    t.rot = ((t.rot||0)+90)%180;
+    toast(`${t.id} rotated.`);
+    renderBuildPanel(); updateUI(); saveGame();
+    return;
+  }
+
+  if(tool==="ZONE"){
+    if(!Game.build.zoneStart){
+      Game.build.zoneStart = {x, y};
+      toast('Zone start set. Tap end corner.');
+      return;
+    }
+    const a=Game.build.zoneStart; Game.build.zoneStart=null;
+    const zx=Math.min(a.x,x), zy=Math.min(a.y,y);
+    const zw=Math.max(40, Math.abs(a.x-x));
+    const zh=Math.max(40, Math.abs(a.y-y));
+    const type = Game.build.zoneType || 'DECOR';
+    const zid = 'Z'+U.uid();
+    Game.build.zones.push({id:zid, type, x:zx, y:zy, w:zw, h:zh});
+    toast(`${type==='DECOR'?'Decor':'Blocked'} zone added.`);
+    renderBuildPanel(); updateUI(); saveGame();
+    return;
+  }
+
+  if(tool==="DEL_ZONE"){
+    const zones = Game.build.zones||[];
+    const hit = zones.find(z=> x>=z.x && x<=z.x+z.w && y>=z.y && y<=z.y+z.h );
+    if(!hit){ toast('Tap inside a zone.'); return; }
+    Game.build.zones = zones.filter(z=>z!==hit);
+    toast('Zone deleted.');
+    renderBuildPanel(); updateUI(); saveGame();
+    return;
+  }
+
+  if(tool==="DEL_TABLE"){
+    const t=nearestTable(x,y);
+    return deleteTable(t);
+  }
+
+  if(tool==="MOVE_KITCHEN") return moveKitchenTo(x,y);
+  if(tool==="MOVE_ENTRY") return moveEntryTo(x,y);
+
+  if(tool==="MOVE_PREP") return moveStation("PREP", x, y);
+  if(tool==="MOVE_COOK") return moveStation("COOK", x, y);
+  if(tool==="MOVE_PASS") return moveStation("PASS", x, y);
+  if(tool==="MOVE_BAR")  return moveStation("BAR", x, y);
 }
 
   renderBookings();
@@ -2433,17 +3024,19 @@ for(const d of allMenu()){
 
 /* -------------------- Save/Load -------------------- */
 function saveGame(){
-  localStorage.setItem("rtycoon_save_v214", JSON.stringify({
+  localStorage.setItem("rtycoon_save_v231", JSON.stringify({
     day:Game.day,cash:Game.cash,rating:Game.rating,cleanliness:Game.cleanliness,
     cooks:Game.cooks,cleaners:Game.cleaners,servers:Game.servers,runners:Game.runners,bartenders:Game.bartenders,
     skill:Game.skill,
     acceptWalkins:Game.acceptWalkins,
     prices:Game.prices,reviews:Game.reviews,
-    regularsDB:Game.regularsDB
+    regularsDB:Game.regularsDB,
+    build:Game.build,
+    mode:Game.mode
   }));
 }
 function loadGame(){
-  const raw=localStorage.getItem("rtycoon_save_v214");
+  const raw=localStorage.getItem("rtycoon_save_v231");
   if(!raw) return false;
   try{
     const s=JSON.parse(raw);
@@ -2454,11 +3047,36 @@ function loadGame(){
     Game.prices=s.prices??{};
     Game.reviews=Array.isArray(s.reviews)?s.reviews:[];
     Game.regularsDB = (s.regularsDB && typeof s.regularsDB==="object") ? s.regularsDB : {};
+    Game.build = (s.build && typeof s.build==='object') ? s.build : null;
+    Game.mode = (s.mode==='BUILD' || s.mode==='OPERATE') ? s.mode : 'OPERATE';
     return true;
   }catch{return false;}
 }
+
+
+function ensureBuildDefaults(){
+  const n = getLayout().tables.length;
+  Game.build = Game.build && typeof Game.build==='object' ? Game.build : {};
+  if(!Array.isArray(Game.build.tableMask) || Game.build.tableMask.length!==n){
+    // Start smaller so "build" feels real: open first 4 tables by default.
+    Game.build.tableMask = Array.from({length:n}, (_,i)=> i < 4);
+  }
+  Game.build.kitchenLevel = Game.build.kitchenLevel ?? 0;
+  Game.build.stationCap = (Game.build.stationCap && typeof Game.build.stationCap==='object') ? Game.build.stationCap : {PREP:1,COOK:1,PASS:1,BAR:1};
+  Game.build.zones = Array.isArray(Game.build.zones) ? Game.build.zones : [];
+  Game.build.zoneType = Game.build.zoneType || 'DECOR';
+  Game.build.editTool = Game.build.editTool || 'MOVE_TABLE';
+  Game.build.selected = Game.build.selected || null;
+  Game.build.zoneStart = Game.build.zoneStart || null;
+  Game.build.barLevel    = Game.build.barLevel ?? 0;
+  Game.build.decorLevel  = Game.build.decorLevel ?? 0;
+  Game.build.editTool = Game.build.editTool || 'MOVE_TABLE';
+  if(!Game.build.layout) Game.build.layout = {};
+
+  Game.mode = (Game.mode==='BUILD' || Game.mode==='OPERATE') ? Game.mode : 'OPERATE';
+}
 function resetAll(){
-  localStorage.removeItem("rtycoon_save_v214");
+  localStorage.removeItem("rtycoon_save_v231");
   Game.day=1; Game.cash=420; Game.rating=3.6; Game.cleanliness=0.92;
   Game.cooks=3; Game.cleaners=0; Game.servers=1; Game.runners=1; Game.bartenders=1;
   Game.skill={cook:1.00, bar:1.00};
@@ -2476,6 +3094,53 @@ document.getElementById("btnStart")?.addEventListener("click", ()=>startDay());
 document.getElementById("btnPause")?.addEventListener("click", ()=>{ if(Game.running) Game.paused=!Game.paused; });
 document.getElementById("btnSpeed")?.addEventListener("click", ()=>{ Game.speedIdx=(Game.speedIdx+1)%Game.speedList.length; });
 document.getElementById("btnReset")?.addEventListener("click", ()=>resetAll());
+
+document.getElementById("btnModeBuild")?.addEventListener("click", ()=>setMode("BUILD"));
+document.getElementById("btnModeOperate")?.addEventListener("click", ()=>setMode("OPERATE"));
+
+document.getElementById("btnAddTable")?.addEventListener("click", ()=>addTable());
+document.getElementById("btnRemoveTable")?.addEventListener("click", ()=>removeTable());
+document.getElementById("btnUpKitchen")?.addEventListener("click", ()=>upgrade("KITCHEN"));
+document.getElementById("btnUpBar")?.addEventListener("click", ()=>upgrade("BAR"));
+document.getElementById("btnUpDecor")?.addEventListener("click", ()=>upgrade("DECOR"));
+
+document.getElementById("tableToggles")?.addEventListener("click", (e)=>{
+  const b=e.target.closest("button[data-tid]"); if(!b) return;
+  const t=Game.tables.find(x=>x.id===b.dataset.tid); if(!t) return;
+  if(t.occupied!==0){ toast("Can't close an occupied table."); return; }
+  t.enabled = !t.enabled;
+  syncTableMask();
+  renderBuildPanel(); updateUI(); saveGame();
+});
+
+// Jump buttons: pan the scrollable canvasWrap on mobile
+function jumpTo(pt){
+  const wrap=document.querySelector(".canvasWrap");
+  if(!wrap) return;
+  wrap.scrollLeft = Math.max(0, pt.x - wrap.clientWidth/2);
+  wrap.scrollTop  = Math.max(0, pt.y - wrap.clientHeight/2);
+}
+document.getElementById("btnJumpDining")?.addEventListener("click", ()=>jumpTo({x:getLayout().diningRect.x+getLayout().diningRect.w/2, y:getLayout().diningRect.y+getLayout().diningRect.h/2}));
+document.getElementById("btnJumpKitchen")?.addEventListener("click", ()=>jumpTo({x:getLayout().kitchenRect.x+getLayout().kitchenRect.w/2, y:getLayout().kitchenRect.y+getLayout().kitchenRect.h/2}));
+document.getElementById("btnJumpDoor")?.addEventListener("click", ()=>jumpTo({x:getLayout().entry.x, y:getLayout().entry.y}));
+
+
+document.getElementById("layoutTool")?.addEventListener("change", (e)=>setLayoutTool(e.target.value));
+document.getElementById("zoneType")?.addEventListener("change", (e)=>{ ensureBuildDefaults(); Game.build.zoneType=e.target.value; saveGame(); updateLayoutHint(); });
+document.getElementById("btnClearBuildSel")?.addEventListener("click", ()=>{ ensureBuildDefaults(); Game.build.selected=null; Game.build.zoneStart=null; toast("Cleared."); });
+
+document.getElementById("btnCapPrep")?.addEventListener("click", ()=>buyCapUpgrade("PREP"));
+document.getElementById("btnCapCook")?.addEventListener("click", ()=>buyCapUpgrade("COOK"));
+document.getElementById("btnCapPass")?.addEventListener("click", ()=>buyCapUpgrade("PASS"));
+document.getElementById("btnCapBar")?.addEventListener("click", ()=>buyCapUpgrade("BAR"));
+
+document.getElementById("zoneList")?.addEventListener("click", (e)=>{
+  const b=e.target.closest("button[data-zid]"); if(!b) return;
+  ensureBuildDefaults();
+  Game.build.zones = (Game.build.zones||[]).filter(z=>z.id!==b.dataset.zid);
+  toast("Zone deleted.");
+  renderBuildPanel(); updateUI(); saveGame();
+});
 document.getElementById("btnHireCook")?.addEventListener("click", ()=>{ Game.cooks+=1; saveGame(); toast("Hired a cook."); });
 document.getElementById("btnHireCleaner")?.addEventListener("click", ()=>{ Game.cleaners+=1; saveGame(); toast("Hired a cleaner."); });
 document.getElementById("btnHireServer")?.addEventListener("click", ()=>{ Game.servers+=1; saveGame(); toast("Hired a server."); });
@@ -2525,7 +3190,7 @@ function loop(){
     updateSim(sdt);
   }
   updateUI();
-  draw();
+  try{ draw(); }catch(e){ showFatalError(e); Game._drawFailed=true; }
   requestAnimationFrame(loop);
 }
 
