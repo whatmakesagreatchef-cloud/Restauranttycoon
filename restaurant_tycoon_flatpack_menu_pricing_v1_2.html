@@ -1,0 +1,1156 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Restaurant Tycoon — Flat Pack MVP (Menu & Pricing v1.2)</title>
+  <style>
+    :root{
+      --bg:#0f1115; --panel:#171a21; --panel2:#11131a; --text:#e8e8ea; --muted:#a6a6ad;
+      --accent:#7bdcff; --good:#7CFF8A; --bad:#ff6b6b; --warn:#ffd166;
+      --grid:#202436; --tile:#121524; --tile2:#0c0f1c;
+    }
+    *{ box-sizing:border-box; }
+    body{ margin:0; background:var(--bg); color:var(--text); font:14px/1.35 system-ui,-apple-system,Segoe UI,Roboto,Arial; }
+    .wrap{ display:flex; min-height:100vh; gap:10px; padding:10px; }
+    .left{ flex:1 1 auto; min-width:0; }
+    .right{ width:380px; max-width:45vw; display:flex; flex-direction:column; gap:10px; }
+    .card{ background:linear-gradient(180deg,var(--panel),#121522); border:1px solid #262b40; border-radius:12px; overflow:hidden; }
+    .card h2{ margin:0; padding:10px 12px; font-size:13px; letter-spacing:.2px; color:#dfe6ff; background:linear-gradient(180deg,#1d2233,#141828); border-bottom:1px solid #262b40; display:flex; justify-content:space-between; align-items:center; gap:8px;}
+    .card .body{ padding:10px 12px; }
+    canvas{ width:100%; height:calc(100vh - 20px); border-radius:12px; background:radial-gradient(1200px 700px at 30% 20%, #141a2a 0%, #0b0d14 40%, #070810 100%); border:1px solid #262b40; }
+    .row{ display:flex; gap:8px; flex-wrap:wrap; }
+    button{ background:#1c2336; color:var(--text); border:1px solid #2b3350; padding:8px 10px; border-radius:10px; cursor:pointer; }
+    button:hover{ border-color:#3a4780; }
+    button.primary{ background:linear-gradient(180deg,#243152,#1a2340); border-color:#4253a3; }
+    button.danger{ background:linear-gradient(180deg,#3a1f23,#2a1719); border-color:#7a2d33; }
+    button:disabled{ opacity:.5; cursor:not-allowed; }
+    .pill{ display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:999px; background:#0f1426; border:1px solid #2b3350; color:#dfe6ff; font-size:12px; }
+    .kpi{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .kpi .box{ background:var(--panel2); border:1px solid #262b40; border-radius:12px; padding:8px; }
+    .kpi .box .label{ color:var(--muted); font-size:12px; }
+    .kpi .box .value{ font-size:16px; margin-top:2px; }
+    .small{ color:var(--muted); font-size:12px; }
+    .tickets{ max-height:210px; overflow:auto; padding-right:6px; }
+    .ticket{ border:1px solid #262b40; background:#0f1426; border-radius:12px; padding:8px; margin-bottom:8px; }
+    .ticket .top{ display:flex; justify-content:space-between; gap:8px; }
+    .bar{ height:8px; border-radius:999px; background:#0b0f1f; border:1px solid #262b40; overflow:hidden; margin-top:6px; }
+    .bar > div{ height:100%; width:50%; background:linear-gradient(90deg,#7bdcff,#7cffc8); }
+    .hr{ height:1px; background:#262b40; margin:10px 0; }
+    .gridhint{ display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+    .key{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); }
+    .sw{ width:12px; height:12px; border-radius:4px; border:1px solid #2b3350; }
+    .toast{ position:fixed; left:50%; transform:translateX(-50%); bottom:14px; background:#0f1426; border:1px solid #2b3350; border-radius:999px; padding:8px 12px; color:#dfe6ff; font-size:12px; opacity:0; transition:opacity .2s; pointer-events:none;}
+    .toast.show{ opacity:1; }
+
+    /* Menu table */
+    .menutable{ width:100%; border-collapse:separate; border-spacing:0 6px; }
+    .menutable th{ text-align:left; color:var(--muted); font-size:12px; font-weight:600; padding:0 6px; }
+    .menutable td{ background:#0f1426; border:1px solid #262b40; padding:8px 6px; font-size:12px; }
+    .menutable tr td:first-child{ border-radius:10px 0 0 10px; }
+    .menutable tr td:last-child{ border-radius:0 10px 10px 0; }
+    .pricebox{ display:flex; gap:6px; align-items:center; }
+    .pricebox input{
+      width:76px; padding:6px 8px; border-radius:10px; border:1px solid #2b3350;
+      background:#0b0f1f; color:var(--text); font-size:12px;
+    }
+    .miniBtn{ padding:6px 8px; border-radius:10px; font-size:12px; }
+    .warnTxt{ color:var(--warn); }
+    .badTxt{ color:var(--bad); }
+    .goodTxt{ color:var(--good); }
+
+    @media (max-width: 900px){
+      .wrap{ flex-direction:column; }
+      .right{ width:auto; max-width:none; }
+      canvas{ height:52vh; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="left">
+    <canvas id="c" width="1100" height="700" aria-label="Restaurant map"></canvas>
+  </div>
+
+  <div class="right">
+    <div class="card">
+      <h2>
+        <span>Restaurant Tycoon — MVP</span>
+        <span class="pill" id="dayPill">Day 1</span>
+      </h2>
+      <div class="body">
+        <div class="row" style="align-items:center; justify-content:space-between;">
+          <div class="pill">Shift: <span id="shiftTime">02:30</span></div>
+          <div class="pill">Speed: <span id="speedText">1×</span></div>
+        </div>
+        <div class="row" style="margin-top:10px;">
+          <button class="primary" id="btnStart">Start Service</button>
+          <button id="btnPause" disabled>Pause</button>
+          <button id="btnSpeed">Speed Up</button>
+          <button id="btnRush">Rush (test)</button>
+          <button class="danger" id="btnReset">Reset</button>
+        </div>
+        <div class="hr"></div>
+        <div class="kpi">
+          <div class="box"><div class="label">Cash</div><div class="value" id="cash">$0</div></div>
+          <div class="box"><div class="label">Rating</div><div class="value" id="rating">0.0★</div></div>
+          <div class="box"><div class="label">Guests Served</div><div class="value" id="served">0</div></div>
+          <div class="box"><div class="label">Avg Wait</div><div class="value" id="avgWait">0s</div></div>
+          <div class="box"><div class="label">Profit Today</div><div class="value" id="profitToday">$0</div></div>
+          <div class="box"><div class="label">Food Cost</div><div class="value" id="foodCostPct">0%</div></div>
+        </div>
+        <div class="hr"></div>
+        <div class="row">
+          <button id="btnHireCook">Hire Cook (+$120/day)</button>
+          <button id="btnHireJanitor">Hire Janitor (+$90/day)</button>
+        </div>
+        <div class="small" style="margin-top:8px;">
+          New in this version: adjust menu pricing — “value” affects reviews.<br><b>If service looks quiet:</b> hit <b>Rush (test)</b> to spawn guests.
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span>Menu & Pricing</span><span class="pill">Target FC 28–35%</span></h2>
+      <div class="body">
+        <table class="menutable" aria-label="Menu pricing table">
+          <thead>
+            <tr>
+              <th style="width:40%;">Dish</th>
+              <th style="width:20%;">Price</th>
+              <th style="width:20%;">Profit</th>
+              <th style="width:20%;">Food%</th>
+            </tr>
+          </thead>
+          <tbody id="menuRows"></tbody>
+        </table>
+        <div class="small" id="menuHint">Raise prices for profit, but guests will complain if “value” drops.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span>Live Tickets</span><span class="pill" id="ticketCount">0</span></h2>
+      <div class="body">
+        <div class="tickets" id="tickets"></div>
+        <div class="small">Each ticket routes through stations: PREP → COOK → PASS.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Legend</h2>
+      <div class="body">
+        <div class="gridhint">
+          <div class="key"><span class="sw" style="background:#1b2a4d;"></span>Dining</div>
+          <div class="key"><span class="sw" style="background:#1f3b2b;"></span>Kitchen</div>
+          <div class="key"><span class="sw" style="background:#3a2a1b;"></span>Tables</div>
+          <div class="key"><span class="sw" style="background:#3b1f34;"></span>Station</div>
+          <div class="key"><span class="sw" style="background:#243152;"></span>Guest</div>
+          <div class="key"><span class="sw" style="background:#1b3a33;"></span>Staff</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   Restaurant Tycoon — Single-File Modular MVP (Menu & Pricing)
+   Modules (in this file):
+   - Util, Time
+   - Data (menu, layout)
+   - Economy & Rating
+   - Guests & Seating
+   - Kitchen: tickets, stations, staff, tasks
+   - Rendering (Canvas)
+   - UI + Save/Load
+   ============================================================ */
+
+/* -------------------- Util -------------------- */
+const U = {
+  clamp:(v,a,b)=>Math.max(a,Math.min(b,v)),
+  lerp:(a,b,t)=>a+(b-a)*t,
+  fmtMoney:(n)=>"$"+Math.round(n).toLocaleString(),
+  now:()=>performance.now()/1000,
+  rand:(a,b)=>a+Math.random()*(b-a),
+  pick:(arr)=>arr[(Math.random()*arr.length)|0],
+  uid:()=>Math.random().toString(36).slice(2,9),
+  star:(r)=> (Math.round(r*10)/10).toFixed(1)+"★"
+};
+function toast(msg){
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=>el.classList.remove("show"), 1400);
+}
+
+/* -------------------- Data -------------------- */
+const DATA = {
+  shiftSeconds: 180,          // 2:30 in-game "shift" per day (fast MVP)
+  spawnBase: 0.40,            // guests per second at ~3.5★
+  spawnMin: 0.12,
+  spawnMax: 0.90,
+  tableCount: 6,
+  seatsPerTable: 2,
+  diningPriceFactor: 1.0,     // later: location tiers
+  cleanlinessDecay: 0.0028,   // per second
+  litterChance: 0.025,        // per guest served
+  ratingFloor: 1.5,
+  ratingCeil: 5.0,
+  stations: ["PREP","COOK","PASS"],
+  // Note: priceBase is the “expected” fair price. Current price is adjustable in Game.prices.
+  menu: [
+    { id:"burger", name:"Burger & Chips", priceBase:24, cost:8.5,  steps:[["PREP",5],["COOK",10],["PASS",3]], baseQuality:0.86, tag:"Fast" },
+    { id:"pasta",  name:"Pasta (Ragù)",  priceBase:28, cost:9.5,  steps:[["PREP",6],["COOK",12],["PASS",3]], baseQuality:0.88, tag:"Comfort" },
+    { id:"salad",  name:"Seasonal Salad",priceBase:20, cost:6.5,  steps:[["PREP",7],["PASS",2]],           baseQuality:0.90, tag:"Light" },
+    { id:"steak",  name:"Steak Frites",  priceBase:42, cost:15.5, steps:[["PREP",5],["COOK",16],["PASS",4]], baseQuality:0.84, tag:"Premium" },
+  ],
+  layout: {
+    diningRect: {x:70,y:70,w:620,h:360},
+    kitchenRect:{x:70,y:450,w:620,h:180},
+    entry:{x:720,y:120},
+    tables: [
+      {x:140,y:120},{x:280,y:120},{x:420,y:120},
+      {x:140,y:250},{x:280,y:250},{x:420,y:250},
+    ],
+    stations: {
+      PREP:{x:170,y:525},
+      COOK:{x:360,y:525},
+      PASS:{x:550,y:525},
+    }
+  }
+};
+
+/* -------------------- State -------------------- */
+const Game = {
+  running:false,
+  paused:false,
+  speedIdx:0,
+  speedList:[1,2,4],
+  day:1,
+  t:0,
+  cash: 420,
+  rating: 3.6,
+  cleanliness: 0.92, // 0..1
+  cooks: 3,          // global cooks shared across stations (simplified)
+  janitors: 0,
+  wageCookPerDay: 120,
+  wageJanitorPerDay: 90,
+  // Pricing module (modifiable)
+  prices: {},        // dishId -> current price
+  tables: [],
+  guests: [],
+  tickets: [],
+  stations: {},
+  stats: {
+    served:0, left:0, revenue:0, costs:0, wages:0,
+    waitTotal:0, waitCount:0, comped:0,
+    issues:{slow:0, out:0, dirty:0, value:0}
+  },
+  spawnAcc:0,
+  reportOpen:false
+};
+
+function getDish(id){ return DATA.menu.find(d=>d.id===id); }
+function getPrice(dishId){
+  const d = getDish(dishId);
+  if(!d) return 0;
+  const p = Game.prices[dishId];
+  return (typeof p === "number" && isFinite(p)) ? p : d.priceBase;
+}
+function setPrice(dishId, newPrice){
+  const d = getDish(dishId);
+  if(!d) return;
+  const min = Math.max(5, Math.round(d.cost + 1));
+  Game.prices[dishId] = U.clamp(Math.round(newPrice), min, 999);
+  saveGame();
+}
+
+/* -------------------- Economy & Rating -------------------- */
+function applyDailyWages(){
+  const wages = Game.cooks * Game.wageCookPerDay + Game.janitors * Game.wageJanitorPerDay;
+  Game.cash -= wages;
+  Game.stats.wages = wages;
+}
+function addRevenue(amount){
+  Game.cash += amount;
+  Game.stats.revenue += amount;
+}
+function addCost(amount){
+  Game.cash -= amount;
+  Game.stats.costs += amount;
+}
+function updateRating(delta){
+  Game.rating = U.clamp(Game.rating + delta, DATA.ratingFloor, DATA.ratingCeil);
+}
+function ratingFromSignals(avgWait, cleanliness){
+  const waitPenalty = U.clamp((avgWait - 18) / 45, 0, 1);          // starts hurting after ~18s
+  const cleanBonus  = U.clamp((cleanliness - 0.75) / 0.25, 0, 1);  // starts rewarding after 0.75
+  const base = 2.5 + (cleanBonus*1.6) - (waitPenalty*1.5);
+  return U.clamp(base, DATA.ratingFloor, DATA.ratingCeil);
+}
+function foodCostPctToday(){
+  const rev = Game.stats.revenue;
+  if(rev <= 0) return 0;
+  return U.clamp((Game.stats.costs / rev) * 100, 0, 999);
+}
+
+/* -------------------- Guests & Seating -------------------- */
+function initTables(){
+  Game.tables = DATA.layout.tables.map((p,i)=>({
+    id:"T"+(i+1),
+    x:p.x,y:p.y,
+    seats:DATA.seatsPerTable,
+    occupied:0,
+    party:null
+  }));
+}
+function canSeatParty(size){
+  return Game.tables.some(t=>t.occupied===0 && t.seats>=size);
+}
+function seatParty(party){
+  const table = Game.tables.find(t=>t.occupied===0 && t.seats>=party.size);
+  if(!table) return false;
+  table.occupied = party.size;
+  table.party = party.id;
+  party.state="SEATED";
+  party.tableId=table.id;
+  party.pos = {x:table.x+20, y:table.y+20};
+  party.seatedAt = Game.t;
+  return true;
+}
+function clearTable(tableId){
+  const t = Game.tables.find(x=>x.id===tableId);
+  if(!t) return;
+  t.occupied=0; t.party=null;
+}
+function spawnGuestParty(){
+  const size = Math.random() < 0.7 ? 2 : 1;
+  const picky = Math.random() < 0.18;
+  const patience = U.rand(35, 75) * (picky?0.85:1.0);
+  const budget = U.rand(18, 55);
+  const id = "G"+U.uid();
+  const pref = U.pick(["Fast","Comfort","Light","Premium"]);
+  const party = {
+    id, size, picky, patience, budget, pref,
+    state:"WAITING",
+    pos:{x:DATA.layout.entry.x, y:DATA.layout.entry.y + U.rand(-20,20)},
+    tableId:null,
+    orderedAt:null,
+    seatedAt:null,
+    servedAt:null,
+    dishId:null,
+    satisfaction:1.0,
+    note:""
+  };
+  Game.guests.push(party);
+}
+function chooseDish(party){
+  // Use current prices for budget considerations
+  const pricedMenu = DATA.menu.map(d=>({...d, price:getPrice(d.id)}));
+  const options = pricedMenu.filter(d=>d.price <= party.budget + 8);
+  const pool = options.length ? options : pricedMenu;
+
+  const weighted = [];
+  for(const d of pool){
+    let w = 1;
+    if(d.tag === party.pref) w += 1.4;
+    if(d.price > party.budget) w -= 0.3;
+    weighted.push([d,w]);
+  }
+  let sum=0; for(const [,w] of weighted) sum+=Math.max(0.05,w);
+  let r=Math.random()*sum;
+  for(const [d,w] of weighted){
+    r -= Math.max(0.05,w);
+    if(r<=0) return DATA.menu.find(x=>x.id===d.id) || pool[0];
+  }
+  return DATA.menu.find(x=>x.id===pool[0].id) || DATA.menu[0];
+}
+
+/* -------------------- Kitchen: Tickets, Stations, Staff -------------------- */
+function initStations(){
+  Game.stations = {};
+  for(const s of DATA.stations){
+    Game.stations[s] = { id:s, queue:[], active:[], done:0 };
+  }
+}
+function stationCapacity(){
+  const base = 1;
+  const extra = Math.max(0, Game.cooks - 3);
+  return { base, extra };
+}
+function ticketQualityEstimate(ticket){
+  const wait = Game.t - ticket.orderedAt;
+  const waitFactor = U.clamp(1 - (wait-20)/80, 0.25, 1.0);
+  const cleanFactor = U.clamp(0.7 + Game.cleanliness*0.4, 0.7, 1.1);
+  return U.clamp(ticket.baseQuality * waitFactor * cleanFactor, 0.2, 1.0);
+}
+
+// Pricing realism: compare current price to "expected fair price" and adjust satisfaction.
+function valueModifier(dishId, quality, partyBudget){
+  const d = getDish(dishId);
+  if(!d) return {mult:1, flag:false};
+
+  const price = getPrice(dishId);
+  // expected price gently rises with rating (people accept higher pricing in a higher-rated venue)
+  const ratingNorm = (Game.rating - DATA.ratingFloor) / (DATA.ratingCeil - DATA.ratingFloor); // 0..1
+  const expected = d.priceBase * (0.92 + ratingNorm*0.18);  // 0.92x..1.10x of base
+  const pressure = price / expected;
+
+  // if price is high relative to expected, guests feel less value unless quality is also high
+  // quality can offset up to ~15% price pressure
+  const qualityOffset = U.clamp((quality - 0.78) * 1.1, -0.1, 0.15); // -10%..+15%
+  const effectivePressure = pressure - qualityOffset;
+
+  let mult = 1;
+  let flag = false;
+
+  if(effectivePressure > 1.15){
+    // Overpriced: up to -25% satisfaction
+    const over = effectivePressure - 1.15;
+    mult *= (1 - U.clamp(over*0.35, 0, 0.25));
+    flag = true;
+  } else if(effectivePressure < 0.88){
+    // Great value: small bonus up to +8%
+    const under = 0.88 - effectivePressure;
+    mult *= (1 + U.clamp(under*0.18, 0, 0.08));
+  }
+
+  // If the guest stretched past budget, they’re harsher on "value"
+  if(price > partyBudget){
+    mult *= 0.94;
+    if(effectivePressure > 1.10) flag = true;
+  }
+
+  return {mult, flag};
+}
+
+function createTicket(party, dish){
+  // Ingredient cost upfront
+  addCost(dish.cost);
+
+  const price = getPrice(dish.id) * DATA.diningPriceFactor;
+
+  const ticket = {
+    id:"K"+U.uid(),
+    partyId:party.id,
+    dishId:dish.id,
+    dishName:dish.name,
+    price,
+    cost:dish.cost,
+    steps:dish.steps.map(([station,time])=>({station, time, remaining:time, state:"QUEUED"})),
+    stepIndex:0,
+    orderedAt:Game.t,
+    startedAt:null,
+    finishedAt:null,
+    baseQuality:dish.baseQuality,
+    status:"QUEUED",
+  };
+  Game.tickets.push(ticket);
+  enqueueNextStep(ticket);
+  return ticket;
+}
+function enqueueNextStep(ticket){
+  const idx = ticket.stepIndex;
+  if(idx >= ticket.steps.length){
+    ticket.status="READY";
+    ticket.finishedAt = Game.t;
+    return;
+  }
+  const step = ticket.steps[idx];
+  step.state = "QUEUED";
+  Game.stations[step.station].queue.push({ticketId:ticket.id, stepIndex:idx});
+  ticket.status="COOKING";
+  if(ticket.startedAt==null) ticket.startedAt=Game.t;
+}
+function processStations(dt){
+  const cap = stationCapacity();
+  const stationList = DATA.stations.map(id=>{
+    const st = Game.stations[id];
+    return {id, queued:st.queue.length, active:st.active.length};
+  }).sort((a,b)=>(b.queued+b.active)-(a.queued+a.active));
+
+  const capMap = {};
+  for(const s of DATA.stations) capMap[s]=cap.base;
+  for(let i=0;i<cap.extra;i++){
+    const pick = stationList[i % stationList.length];
+    capMap[pick.id] += 1;
+  }
+
+  for(const sid of DATA.stations){
+    const st = Game.stations[sid];
+
+    while(st.active.length < capMap[sid] && st.queue.length>0){
+      const task = st.queue.shift();
+      st.active.push({ ticketId:task.ticketId, stepIndex:task.stepIndex });
+      const ticket = Game.tickets.find(t=>t.id===task.ticketId);
+      if(ticket) ticket.steps[task.stepIndex].state="ACTIVE";
+    }
+
+    for(let i=st.active.length-1;i>=0;i--){
+      const a = st.active[i];
+      const ticket = Game.tickets.find(t=>t.id===a.ticketId);
+      if(!ticket){ st.active.splice(i,1); continue; }
+      const step = ticket.steps[a.stepIndex];
+      if(!step){ st.active.splice(i,1); continue; }
+
+      const speed = U.clamp(1.0 + (Game.cleanliness-0.85)*0.6, 0.75, 1.15);
+      step.remaining -= dt * speed;
+
+      if(step.remaining <= 0){
+        step.state="DONE";
+        st.done += 1;
+        st.active.splice(i,1);
+        ticket.stepIndex += 1;
+        enqueueNextStep(ticket);
+      }
+    }
+  }
+}
+
+function finalizeReadyTickets(){
+  for(const ticket of Game.tickets){
+    if(ticket.status !== "READY" || ticket._served) continue;
+
+    const party = Game.guests.find(g=>g.id===ticket.partyId);
+    if(!party){ ticket._served=true; continue; }
+
+    const wait = (ticket.finishedAt ?? Game.t) - ticket.orderedAt;
+    Game.stats.waitTotal += wait;
+    Game.stats.waitCount += 1;
+
+    const quality = ticketQualityEstimate(ticket);
+    let sat = quality;
+
+    const late = wait > party.patience;
+    if(late){
+      sat *= 0.55;
+      Game.stats.issues.slow += 1;
+    }
+    if(Game.cleanliness < 0.55){
+      sat *= 0.78;
+      Game.stats.issues.dirty += 1;
+    }
+
+    if(party.picky){
+      sat *= U.clamp(0.9 + (quality-0.75)*0.6, 0.6, 1.1);
+      if(late) sat *= 0.85;
+    }
+
+    // VALUE perception (pricing module)
+    const v = valueModifier(ticket.dishId, quality, party.budget);
+    sat *= v.mult;
+    if(v.flag){
+      Game.stats.issues.value += 1;
+      if(!party.note) party.note = "Value felt off (price vs experience)";
+    }
+
+    const refund = sat < 0.35;
+    if(refund){
+      Game.stats.comped += 1;
+      updateRating(-0.09);
+      party.note = party.note || "Comped (too slow / poor quality)";
+    }else{
+      addRevenue(ticket.price);
+      updateRating(+0.02);
+    }
+
+    party.servedAt = Game.t;
+    party.state = "EATING";
+    party.satisfaction = sat;
+
+    if(Math.random() < DATA.litterChance){
+      Game.cleanliness = U.clamp(Game.cleanliness - 0.06, 0, 1);
+    }
+
+    Game.stats.served += 1;
+    ticket._served = true;
+
+    party._leaveAt = Game.t + U.rand(8, 16);
+
+    if(sat > 0.75) updateRating(+0.02);
+    if(sat < 0.5)  updateRating(-0.03);
+  }
+  Game.tickets = Game.tickets.filter(t=>!t._served || (Game.t - (t.finishedAt ?? Game.t) < 30));
+}
+
+/* -------------------- Simulation -------------------- */
+function startDay(){
+  Game.running = true;
+  Game.paused = false;
+  Game.reportOpen = false;
+  Game.t = 0;
+  Game.spawnAcc = 0;
+  Game.guests = [];
+  Game.tickets = [];
+  Game.stats = {
+    served:0, left:0, revenue:0, costs:0, wages:0,
+    waitTotal:0, waitCount:0, comped:0,
+    issues:{slow:0, out:0, dirty:0, value:0}
+  };
+  
+  // Seed guests so you instantly see tickets when service starts
+  for(let i=0;i<4;i++){
+    const size = Math.random() < 0.7 ? 2 : 1;
+    const picky = Math.random() < 0.18;
+    const patience = U.rand(35, 75) * (picky?0.85:1.0);
+    const budget = U.rand(18, 55);
+    const id = "G"+U.uid();
+    const pref = U.pick(["Fast","Comfort","Light","Premium"]);
+    const party = {
+      id, size, picky, patience, budget, pref,
+      state:"WAITING",
+      pos:{x:DATA.layout.entry.x, y:DATA.layout.entry.y + U.rand(-20,20)},
+      tableId:null,
+      orderedAt:null,
+      seatedAt:null,
+      servedAt:null,
+      dishId:null,
+      satisfaction:1.0,
+      note:""
+    };
+    Game.guests.push(party);
+  }
+
+  // Seat seeded guests immediately and trigger fast ordering
+  for(const p of Game.guests){
+    if(p.state==="WAITING"){
+      if(seatParty(p)){
+        p._orderAt = Game.t + U.rand(0.3, 1.5);
+      }
+    }
+  }
+initTables();
+  initStations();
+  applyDailyWages();
+  toast("Service started. Pricing matters now — keep value strong!");
+}
+function endDay(){
+  Game.running = false;
+  Game.paused = false;
+  Game.reportOpen = true;
+
+  const avgWait = Game.stats.waitCount ? Game.stats.waitTotal/Game.stats.waitCount : 0;
+  const target = ratingFromSignals(avgWait, Game.cleanliness);
+  Game.rating = U.clamp(U.lerp(Game.rating, target, 0.55), DATA.ratingFloor, DATA.ratingCeil);
+
+  saveGame();
+  toast("Service finished. Check the report!");
+}
+function updateSim(dt){
+  Game.cleanliness = U.clamp(Game.cleanliness - DATA.cleanlinessDecay*dt, 0, 1);
+  if(Game.janitors > 0){
+    const cleanRate = 0.0085 * Game.janitors;
+    Game.cleanliness = U.clamp(Game.cleanliness + cleanRate*dt, 0, 1);
+  }
+
+  const ratingNorm = (Game.rating - DATA.ratingFloor) / (DATA.ratingCeil - DATA.ratingFloor);
+  let spawn = DATA.spawnBase + ratingNorm*0.18 + (Game.cleanliness-0.75)*0.12;
+  spawn = U.clamp(spawn, DATA.spawnMin, DATA.spawnMax);
+
+  Game.spawnAcc += spawn * dt;
+  while(Game.spawnAcc >= 1){
+    Game.spawnAcc -= 1;
+    spawnGuestParty();
+  }
+
+  for(const party of Game.guests){
+    if(party.state==="WAITING"){
+      const waited = Game.t - (party._arrivedAt ?? (party._arrivedAt = Game.t));
+      if(seatParty(party)){
+        party._orderAt = Game.t + U.rand(2.5, 6.5);
+      }else if(waited > U.rand(14, 24)){
+        party.state="LEFT";
+        Game.stats.left += 1;
+        updateRating(-0.03);
+        party.note = "Left (no table)";
+      }
+    }
+    if(party.state==="SEATED" && Game.t >= party._orderAt){
+      const dish = chooseDish(party);
+      party.dishId = dish.id;
+      party.orderedAt = Game.t;
+      party.state="ORDERED";
+      createTicket(party, dish);
+    }
+    if(party.state==="ORDERED"){
+      const waited = Game.t - party.orderedAt;
+      if(waited > party.patience*1.35){
+        party.state="LEFT";
+        Game.stats.left += 1;
+        updateRating(-0.07);
+        party.note = "Left (waited too long)";
+        if(party.tableId) clearTable(party.tableId);
+      }
+    }
+    if(party.state==="EATING" && Game.t >= party._leaveAt){
+      party.state="DONE";
+      if(party.tableId) clearTable(party.tableId);
+    }
+  }
+
+  processStations(dt);
+  finalizeReadyTickets();
+
+  if(Game.t >= DATA.shiftSeconds) endDay();
+}
+
+/* -------------------- Rendering (Canvas) -------------------- */
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+let DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+
+function resizeCanvas(){
+  const rect = canvas.getBoundingClientRect();
+  const w = Math.floor(rect.width * DPR);
+  const h = Math.floor(rect.height * DPR);
+  if(canvas.width !== w || canvas.height !== h){
+    canvas.width = w; canvas.height = h;
+  }
+}
+window.addEventListener("resize", ()=>{ DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1)); resizeCanvas(); });
+
+function draw(){
+  resizeCanvas();
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0,0,w,h);
+
+  // background grid
+  ctx.save();
+  ctx.globalAlpha = 0.35;
+  ctx.strokeStyle = "rgba(123,220,255,0.10)";
+  ctx.lineWidth = 1;
+  const step = 28 * DPR;
+  for(let x=0; x<w; x+=step){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
+  for(let y=0; y<h; y+=step){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
+  ctx.restore();
+
+  const L = DATA.layout;
+  const scale = DPR;
+  function rect(r, fill, stroke){
+    ctx.fillStyle = fill; ctx.strokeStyle = stroke;
+    ctx.lineWidth = 2*scale;
+    ctx.beginPath();
+    ctx.roundRect(r.x*scale, r.y*scale, r.w*scale, r.h*scale, 14*scale);
+    ctx.fill(); ctx.stroke();
+  }
+  rect(L.diningRect, "rgba(27,42,77,0.35)", "rgba(123,220,255,0.18)");
+  rect(L.kitchenRect,"rgba(31,59,43,0.35)", "rgba(124,255,138,0.16)");
+
+  ctx.fillStyle = "rgba(223,230,255,0.90)";
+  ctx.font = `${14*scale}px system-ui`;
+  ctx.fillText("DINING", (L.diningRect.x+14)*scale, (L.diningRect.y+24)*scale);
+  ctx.fillText("KITCHEN", (L.kitchenRect.x+14)*scale, (L.kitchenRect.y+24)*scale);
+
+  // tables
+  for(const t of Game.tables){
+    const x=t.x*scale, y=t.y*scale;
+    ctx.fillStyle = "rgba(58,42,27,0.75)";
+    ctx.strokeStyle = "rgba(255,209,102,0.25)";
+    ctx.lineWidth = 2*scale;
+    ctx.beginPath(); ctx.roundRect(x, y, 90*scale, 60*scale, 10*scale); ctx.fill(); ctx.stroke();
+
+    ctx.fillStyle = "rgba(232,232,234,0.95)";
+    ctx.font = `${12*scale}px system-ui`;
+    ctx.fillText(t.id, x+8*scale, y+18*scale);
+
+    for(let i=0;i<t.seats;i++){
+      ctx.beginPath();
+      const ox = x + (12 + i*14)*scale;
+      const oy = y + 42*scale;
+      ctx.fillStyle = (i < t.occupied) ? "rgba(123,220,255,0.95)" : "rgba(255,255,255,0.22)";
+      ctx.arc(ox, oy, 4.2*scale, 0, Math.PI*2);
+      ctx.fill();
+    }
+  }
+
+  // stations
+  for(const sid of DATA.stations){
+    const s = L.stations[sid];
+    const st = Game.stations[sid];
+    const x=s.x*scale, y=s.y*scale;
+    ctx.fillStyle = "rgba(59,31,52,0.70)";
+    ctx.strokeStyle = "rgba(255,107,107,0.22)";
+    ctx.lineWidth = 2*scale;
+    ctx.beginPath(); ctx.roundRect(x, y, 120*scale, 70*scale, 12*scale); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "rgba(232,232,234,0.95)";
+    ctx.font = `${12*scale}px system-ui`;
+    ctx.fillText(sid, x+10*scale, y+20*scale);
+
+    const q = (st?.queue?.length)||0;
+    const a = (st?.active?.length)||0;
+    ctx.fillStyle = "rgba(223,230,255,0.75)";
+    ctx.fillText(`Q:${q}  W:${a}`, x+10*scale, y+40*scale);
+  }
+
+  // staff summary
+  ctx.fillStyle = "rgba(124,255,138,0.9)";
+  ctx.font = `${12*scale}px system-ui`;
+  ctx.fillText(`Cooks: ${Game.cooks}   Janitors: ${Game.janitors}`, 75*scale, 662*scale);
+
+  // entry label
+  ctx.fillStyle = "rgba(123,220,255,0.18)";
+  ctx.strokeStyle = "rgba(123,220,255,0.30)";
+  ctx.lineWidth = 2*scale;
+  ctx.beginPath();
+  ctx.roundRect((L.entry.x-20)*scale, (L.entry.y-20)*scale, 140*scale, 70*scale, 14*scale);
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "rgba(223,230,255,0.85)";
+  ctx.fillText("ENTRY / QUEUE", (L.entry.x-8)*scale, (L.entry.y+8)*scale);
+
+  // guests
+  for(const g of Game.guests){
+    if(g.state==="LEFT" || g.state==="DONE") continue;
+    let px=g.pos.x, py=g.pos.y;
+    if(g.state==="WAITING"){
+      const idx = Game.guests.filter(x=>x.state==="WAITING").indexOf(g);
+      px = L.entry.x + (idx%5)*18;
+      py = L.entry.y + 36 + Math.floor(idx/5)*16;
+    }else if(g.tableId){
+      const t = Game.tables.find(x=>x.id===g.tableId);
+      if(t){ px = t.x + 58 + (g.size===2?0:10); py = t.y + 35; }
+    }
+    ctx.beginPath();
+    ctx.fillStyle = "rgba(36,49,82,0.95)";
+    ctx.arc(px*scale, py*scale, 7*scale, 0, Math.PI*2);
+    ctx.fill();
+    const mood = g.state==="ORDERED" ? (1 - U.clamp((Game.t - g.orderedAt)/g.patience,0,1)) : 1;
+    ctx.strokeStyle = mood > 0.6 ? "rgba(124,255,138,0.85)" : (mood>0.3 ? "rgba(255,209,102,0.85)" : "rgba(255,107,107,0.85)");
+    ctx.lineWidth = 2*scale;
+    ctx.stroke();
+  }
+
+  // cleanliness meter
+  const meterX = 720*scale, meterY = 210*scale, meterW = 320*scale, meterH = 18*scale;
+  ctx.fillStyle = "rgba(15,20,38,0.9)";
+  ctx.strokeStyle = "rgba(43,51,80,0.9)";
+  ctx.lineWidth = 2*scale;
+  ctx.beginPath(); ctx.roundRect(meterX, meterY, meterW, meterH, 999); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "rgba(123,220,255,0.85)";
+  ctx.beginPath(); ctx.roundRect(meterX, meterY, meterW*Game.cleanliness, meterH, 999); ctx.fill();
+  ctx.fillStyle = "rgba(223,230,255,0.85)";
+  ctx.font = `${12*scale}px system-ui`;
+  ctx.fillText("Cleanliness", meterX, meterY - 6*scale);
+
+  // report overlay
+  if(Game.reportOpen){
+    const pad=30*scale;
+    ctx.fillStyle="rgba(7,8,16,0.80)";
+    ctx.fillRect(0,0,w,h);
+    ctx.fillStyle="rgba(223,230,255,0.95)";
+    ctx.font=`${22*scale}px system-ui`;
+    ctx.fillText(`End of Day ${Game.day} Report`, pad, pad+10*scale);
+
+    const avgWait = Game.stats.waitCount ? (Game.stats.waitTotal/Game.stats.waitCount) : 0;
+    const profit = Game.stats.revenue - Game.stats.costs - Game.stats.wages;
+    const fc = foodCostPctToday();
+
+    const lines = [];
+    lines.push(["Revenue", U.fmtMoney(Game.stats.revenue)]);
+    lines.push(["Ingredient Costs", "-"+U.fmtMoney(Game.stats.costs)]);
+    lines.push(["Wages", "-"+U.fmtMoney(Game.stats.wages)]);
+    lines.push(["Profit", U.fmtMoney(profit)]);
+    lines.push(["Food Cost %", (Game.stats.revenue>0 ? fc.toFixed(1) : "0.0")+"%"]);
+    lines.push(["Served", String(Game.stats.served)]);
+    lines.push(["Left", String(Game.stats.left)]);
+    lines.push(["Avg Wait", Math.round(avgWait)+"s"]);
+    lines.push(["Cleanliness", Math.round(Game.cleanliness*100)+"%"]);
+    lines.push(["Rating", U.star(Game.rating)]);
+
+    ctx.font=`${14*scale}px system-ui`;
+    let y = pad + 50*scale;
+    for(const [k,v] of lines){
+      ctx.fillStyle="rgba(166,166,173,0.95)";
+      ctx.fillText(k, pad, y);
+      ctx.fillStyle="rgba(223,230,255,0.95)";
+      ctx.fillText(v, pad + 240*scale, y);
+      y += 24*scale;
+    }
+
+    ctx.fillStyle="rgba(166,166,173,0.95)";
+    ctx.fillText("Top Issues", pad, y+16*scale);
+    ctx.fillStyle="rgba(223,230,255,0.95)";
+    ctx.fillText(`Slow: ${Game.stats.issues.slow}   Dirty: ${Game.stats.issues.dirty}   Value: ${Game.stats.issues.value}   Comps: ${Game.stats.comped}`, pad, y+40*scale);
+
+    ctx.fillStyle="rgba(123,220,255,0.95)";
+    ctx.fillText("Tap / click anywhere to start next day", pad, h - 40*scale);
+  }
+}
+
+/* -------------------- UI + Menu Panel -------------------- */
+function buildMenuPanel(){
+  const body = document.getElementById("menuRows");
+  body.innerHTML = "";
+  for(const d of DATA.menu){
+    const price = getPrice(d.id);
+    const profit = price - d.cost;
+    const fc = price > 0 ? (d.cost / price)*100 : 0;
+    const fcClass = (fc < 28) ? "goodTxt" : (fc <= 35 ? "" : "warnTxt");
+    const profitClass = (profit >= 12) ? "goodTxt" : (profit >= 7 ? "" : "warnTxt");
+    body.insertAdjacentHTML("beforeend", `
+      <tr data-dish="${d.id}">
+        <td><b>${d.name}</b><div class="small">${d.tag}</div></td>
+        <td>
+          <div class="pricebox">
+            <button class="miniBtn" data-act="dec" title="Decrease">$-</button>
+            <input type="number" inputmode="numeric" min="5" step="1" value="${Math.round(price)}" data-act="set" aria-label="Price for ${d.name}">
+            <button class="miniBtn" data-act="inc" title="Increase">+$</button>
+          </div>
+        </td>
+        <td class="${profitClass}">$${profit.toFixed(0)}</td>
+        <td class="${fcClass}">${fc.toFixed(0)}%</td>
+      </tr>
+    `);
+  }
+
+  // event delegation for buttons/inputs
+  body.onclick = (e)=>{
+    const btn = e.target.closest("button[data-act]");
+    if(!btn) return;
+    const tr = btn.closest("tr");
+    const id = tr?.dataset?.dish;
+    if(!id) return;
+    const d = getDish(id);
+    if(!d) return;
+    const cur = getPrice(id);
+    const step = (id==="steak") ? 2 : 1; // a tiny bit of variety
+    if(btn.dataset.act==="inc") setPrice(id, cur + step);
+    if(btn.dataset.act==="dec") setPrice(id, cur - step);
+    buildMenuPanel();
+  };
+  body.onchange = (e)=>{
+    const inp = e.target.closest("input[data-act='set']");
+    if(!inp) return;
+    const tr = inp.closest("tr");
+    const id = tr?.dataset?.dish;
+    if(!id) return;
+    const v = Number(inp.value);
+    if(!isFinite(v)) return;
+    setPrice(id, v);
+    buildMenuPanel();
+  };
+}
+
+function updateUI(){
+  document.getElementById("cash").textContent = U.fmtMoney(Game.cash);
+  document.getElementById("rating").textContent = U.star(Game.rating);
+  document.getElementById("served").textContent = String(Game.stats.served);
+
+  const avgWait = Game.stats.waitCount ? (Game.stats.waitTotal/Game.stats.waitCount) : 0;
+  document.getElementById("avgWait").textContent = Math.round(avgWait)+"s";
+
+  const profit = Game.stats.revenue - Game.stats.costs - Game.stats.wages;
+  document.getElementById("profitToday").textContent = U.fmtMoney(profit);
+
+  const fc = foodCostPctToday();
+  document.getElementById("foodCostPct").textContent = (Game.stats.revenue>0 ? fc.toFixed(1) : "0.0")+"%";
+
+  document.getElementById("dayPill").textContent = "Day "+Game.day;
+  document.getElementById("speedText").textContent = Game.speedList[Game.speedIdx]+"×";
+  document.getElementById("ticketCount").textContent = String(Game.tickets.filter(t=>!t._served).length);
+
+  const remain = Math.max(0, DATA.shiftSeconds - Game.t);
+  const mm = String(Math.floor(remain/60)).padStart(2,"0");
+  const ss = String(Math.floor(remain%60)).padStart(2,"0");
+  document.getElementById("shiftTime").textContent = `${mm}:${ss}`;
+
+  document.getElementById("btnStart").disabled = Game.running;
+  document.getElementById("btnPause").disabled = !Game.running;
+  document.getElementById("btnPause").textContent = Game.paused ? "Resume" : "Pause";
+
+  // tickets list
+  const box = document.getElementById("tickets");
+  const live = Game.tickets.filter(t=>!t._served).slice(0,12);
+  box.innerHTML = live.length ? "" : `<div class="small">No tickets yet. Start service to begin.</div>`;
+  for(const t of live){
+    const party = Game.guests.find(g=>g.id===t.partyId);
+    const waited = Game.t - t.orderedAt;
+    const prog = U.clamp((t.stepIndex) / (t.steps.length || 1), 0, 1);
+    const q = ticketQualityEstimate(t);
+    const mood = party ? (party.state==="ORDERED" ? (1-U.clamp((Game.t-party.orderedAt)/party.patience,0,1)) : 1) : 1;
+    const warn = (waited>35 || q<0.55) ? " style='border-color:#7a2d33;'" : "";
+    box.insertAdjacentHTML("beforeend", `
+      <div class="ticket"${warn}>
+        <div class="top">
+          <div><b>${t.dishName}</b><div class="small">Ticket ${t.id} · Price $${Math.round(t.price)}</div></div>
+          <div style="text-align:right">
+            <div class="small">Wait ${Math.round(waited)}s</div>
+            <div class="small">Quality ${(q*100).toFixed(0)}%</div>
+          </div>
+        </div>
+        <div class="bar"><div style="width:${(prog*100).toFixed(0)}%"></div></div>
+        <div class="small" style="margin-top:6px;">
+          Step ${Math.min(t.stepIndex+1, t.steps.length)}/${t.steps.length} — ${t.stepIndex < t.steps.length ? t.steps[t.stepIndex].station : "DONE"}
+          · Patience ${(party?Math.round(party.patience):"-")}s
+          · Mood ${(mood*100).toFixed(0)}%
+        </div>
+      </div>
+    `);
+  }
+
+  document.getElementById("btnHireCook").textContent = `Hire Cook (+$${Game.wageCookPerDay}/day)`;
+  document.getElementById("btnHireJanitor").textContent = `Hire Janitor (+$${Game.wageJanitorPerDay}/day)`;
+}
+
+function saveGame(){
+  const save = {
+    v:2,
+    day:Game.day,
+    cash:Game.cash,
+    rating:Game.rating,
+    cleanliness:Game.cleanliness,
+    cooks:Game.cooks,
+    janitors:Game.janitors,
+    prices:Game.prices
+  };
+  localStorage.setItem("rtycoon_save_v2", JSON.stringify(save));
+}
+function loadGame(){
+  // migrate from v1 if needed
+  const raw2 = localStorage.getItem("rtycoon_save_v2");
+  if(raw2){
+    try{
+      const s = JSON.parse(raw2);
+      Game.day = s.day ?? 1;
+      Game.cash = s.cash ?? 420;
+      Game.rating = s.rating ?? 3.6;
+      Game.cleanliness = s.cleanliness ?? 0.92;
+      Game.cooks = s.cooks ?? 3;
+      Game.janitors = s.janitors ?? 0;
+      Game.prices = s.prices ?? {};
+      return true;
+    }catch{}
+  }
+  const raw1 = localStorage.getItem("rtycoon_save_v1");
+  if(raw1){
+    try{
+      const s = JSON.parse(raw1);
+      Game.day = s.day ?? 1;
+      Game.cash = s.cash ?? 420;
+      Game.rating = s.rating ?? 3.6;
+      Game.cleanliness = s.cleanliness ?? 0.92;
+      Game.cooks = s.cooks ?? 3;
+      Game.janitors = s.janitors ?? 0;
+      // start with base prices
+      Game.prices = {};
+      return true;
+    }catch{}
+  }
+  return false;
+}
+
+function resetAll(){
+  localStorage.removeItem("rtycoon_save_v2");
+  localStorage.removeItem("rtycoon_save_v1");
+  Game.day=1; Game.cash=420; Game.rating=3.6; Game.cleanliness=0.92; Game.cooks=3; Game.janitors=0; Game.prices={};
+  Game.running=false; Game.paused=false; Game.reportOpen=false;
+  initTables(); initStations();
+  Game.guests=[]; Game.tickets=[];
+  buildMenuPanel();
+  toast("Reset complete.");
+}
+
+/* -------------------- Input -------------------- */
+document.getElementById("btnStart").addEventListener("click", ()=>startDay());
+document.getElementById("btnPause").addEventListener("click", ()=>{
+  if(!Game.running) return;
+  Game.paused = !Game.paused;
+});
+document.getElementById("btnSpeed").addEventListener("click", ()=>{
+  Game.speedIdx = (Game.speedIdx+1) % Game.speedList.length;
+});
+document.getElementById("btnReset").addEventListener("click", ()=>resetAll());
+
+document.getElementById("btnHireCook").addEventListener("click", ()=>{
+  Game.cooks += 1;
+  toast("Hired a cook. Your stations will clear faster.");
+  saveGame();
+});
+document.getElementById("btnHireJanitor").addEventListener("click", ()=>{
+  Game.janitors += 1;
+  toast("Hired a janitor. Cleanliness will hold up.");
+  saveGame();
+});
+
+// Rush button (testing): spawns a bunch of guests immediately
+document.getElementById("btnRush").addEventListener("click", ()=>{
+  if(!Game.running){
+    toast("Start service first, then hit Rush.");
+    return;
+  }
+  const before = Game.guests.length;
+  for(let i=0;i<8;i++) spawnGuestParty();
+  // Try seat the new arrivals immediately; they order fast
+  for(let i=before;i<Game.guests.length;i++){
+    const p = Game.guests[i];
+    if(p && p.state==="WAITING"){
+      if(seatParty(p)) p._orderAt = Game.t + U.rand(0.2, 1.2);
+    }
+  }
+  toast("Rush: new parties at the door!");
+});
+canvas.addEventListener("pointerdown", ()=>{
+  if(Game.reportOpen){
+    Game.day += 1;
+    Game.reportOpen = false;
+    Game.cleanliness = U.clamp(Game.cleanliness + 0.10, 0, 1);
+    saveGame();
+    toast("New day. Adjust pricing and go again.");
+  }
+});
+
+/* -------------------- Main Loop -------------------- */
+let last = U.now();
+function loop(){
+  const now = U.now();
+  let dt = now - last;
+  last = now;
+  dt = U.clamp(dt, 0, 0.05);
+
+  if(Game.running && !Game.paused){
+    const speed = Game.speedList[Game.speedIdx];
+    const sdt = dt * speed;
+    Game.t += sdt;
+    updateSim(sdt);
+  }
+
+  updateUI();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+/* -------------------- Boot -------------------- */
+(function boot(){
+  if(!CanvasRenderingContext2D.prototype.roundRect){
+    CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
+      r = Math.min(r, w/2, h/2);
+      this.beginPath();
+      this.moveTo(x+r,y);
+      this.arcTo(x+w,y,x+w,y+h,r);
+      this.arcTo(x+w,y+h,x,y+h,r);
+      this.arcTo(x,y+h,x,y,r);
+      this.arcTo(x,y,x+w,y,r);
+      this.closePath();
+      return this;
+    }
+  }
+  initTables();
+  initStations();
+  loadGame();
+
+  // initialize prices with base if missing
+  for(const d of DATA.menu){
+    if(!(d.id in Game.prices)) Game.prices[d.id] = d.priceBase;
+  }
+
+  buildMenuPanel();
+  updateUI();
+  draw();
+  requestAnimationFrame(loop);
+  toast("Loaded. Adjust menu pricing, then start service.");
+})();
+</script>
+</body>
+</html>
