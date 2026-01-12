@@ -1,2187 +1,2374 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Restaurant Tycoon — Flat Pack (Build Mode / Layout)</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>Restaurant Tycoon — Single File Modular v18</title>
   <style>
-    :root{
-      --bg:#0f1115; --panel:#171a21; --panel2:#11131a; --text:#e8e8ea; --muted:#a6a6ad;
-      --accent:#7bdcff; --good:#7CFF8A; --bad:#ff6b6b; --warn:#ffd166;
-    }
-    *{ box-sizing:border-box; }
-    body{ margin:0; background:var(--bg); color:var(--text); font:14px/1.35 system-ui,-apple-system,Segoe UI,Roboto,Arial; }
-    .wrap{ display:flex; min-height:100vh; gap:10px; padding:10px; }
-    .left{ flex:1 1 auto; min-width:0; }
-    .right{ width:470px; max-width:54vw; display:flex; flex-direction:column; gap:10px; }
-    .card{ background:linear-gradient(180deg,var(--panel),#121522); border:1px solid #262b40; border-radius:12px; overflow:hidden; }
-    .card h2{ margin:0; padding:10px 12px; font-size:13px; letter-spacing:.2px; color:#dfe6ff; background:linear-gradient(180deg,#1d2233,#141828); border-bottom:1px solid #262b40; display:flex; justify-content:space-between; align-items:center; gap:8px;}
-    .card .body{ padding:10px 12px; }
-    canvas{ width:100%; height:calc(100vh - 20px); border-radius:12px; background:radial-gradient(1200px 700px at 30% 20%, #141a2a 0%, #0b0d14 40%, #070810 100%); border:1px solid #262b40; touch-action:none; }
-    .row{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-    button{ background:#1c2336; color:var(--text); border:1px solid #2b3350; padding:8px 10px; border-radius:10px; cursor:pointer; }
-    button:hover{ border-color:#3a4780; }
-    button.primary{ background:linear-gradient(180deg,#243152,#1a2340); border-color:#4253a3; }
-    button.danger{ background:linear-gradient(180deg,#3a1f23,#2a1719); border-color:#7a2d33; }
-    button.mini{ padding:6px 8px; border-radius:8px; font-size:12px; }
-    button:disabled{ opacity:.5; cursor:not-allowed; }
-    .pill{ display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:999px; background:#0f1426; border:1px solid #2b3350; color:#dfe6ff; font-size:12px; }
-    .small{ color:var(--muted); font-size:12px; }
-    .hr{ height:1px; background:#262b40; margin:10px 0; }
-    .kpi{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-    .kpi .box{ background:var(--panel2); border:1px solid #262b40; border-radius:12px; padding:8px; }
-    .kpi .box .label{ color:var(--muted); font-size:12px; }
-    .kpi .box .value{ font-size:16px; margin-top:2px; }
+  :root{
+    --bg:#0b0d10;
+    --border: rgba(255,255,255,0.12);
+    --muted: rgba(255,255,255,0.65);
+    --text: rgba(255,255,255,0.92);
+  }
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    background: radial-gradient(1200px 700px at 30% 20%, rgba(255,210,91,0.08), transparent 55%),
+                radial-gradient(1200px 700px at 70% 10%, rgba(120,198,255,0.06), transparent 55%),
+                var(--bg);
+    color: var(--text);
+  }
+  .topbar{
+    position: sticky; top:0; z-index:10;
+    background: rgba(10,12,16,0.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding: 10px 12px;
+    display:flex;
+    gap: 12px;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+  }
+  .brand{ display:flex; gap:12px; align-items:center; }
+  .logo{
+    width:40px; height:40px; border-radius:12px;
+    display:flex; align-items:center; justify-content:center;
+    background: rgba(255,210,91,0.12);
+    border: 1px solid rgba(255,210,91,0.26);
+    font-weight: 900;
+  }
+  h1{ font-size:18px; margin:0; }
+  .sub{ font-size:12px; color: var(--muted); margin-top:2px; }
+  .muted{ color: var(--muted); font-weight:600; }
+  .controls{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  button, select{
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.16);
+    background: rgba(255,255,255,0.06);
+    color: inherit;
+    padding: 10px 12px;
+    font-weight: 750;
+    cursor:pointer;
+  }
+  button.primary{
+    background: rgba(255,210,91,0.16);
+    border-color: rgba(255,210,91,0.30);
+  }
+  button.danger{
+    background: rgba(255,97,97,0.12);
+    border-color: rgba(255,97,97,0.25);
+  }
+  button:disabled{ opacity:0.5; cursor:not-allowed; }
+  input[type="range"]{ width: 170px; }
 
-    .list{ max-height:205px; overflow:auto; padding-right:6px; }
-    .staffList{ max-height:200px; overflow:auto; padding-right:6px; }
-    .staff{ border:1px solid #262b40; background:#0f1426; border-radius:12px; padding:8px; margin-bottom:8px; }
-    .staffTop{ display:flex; justify-content:space-between; gap:10px; align-items:flex-start; }
-    select{ padding:7px 8px; border-radius:10px; border:1px solid #2b3350; background:#0b0f1f; color:#dfe6ff; }
-    input[type="number"]{ width:92px; padding:7px 8px; border-radius:10px; border:1px solid #2b3350; background:#0b0f1f; color:#dfe6ff; }
+  .wrap{
+    display:grid;
+    grid-template-columns: 420px 1fr;
+    gap: 12px;
+    padding: 12px;
+    align-items:start;
+  }
+  .left{ display:flex; flex-direction:column; gap: 12px; }
+  .right{ min-width: 0; }
 
-    .ticketBox{ max-height:155px; overflow:auto; padding-right:6px; }
-    .ticket{ border:1px solid #262b40; background:#0f1426; border-radius:12px; padding:8px; margin-bottom:8px; }
-    .ticket .top{ display:flex; justify-content:space-between; gap:8px; }
-    .bar{ height:8px; border-radius:999px; background:#0b0f1f; border:1px solid #262b40; overflow:hidden; margin-top:6px; }
-    .bar > div{ height:100%; width:50%; background:linear-gradient(90deg,#7bdcff,#7cffc8); }
+  .card{
+    background: rgba(18,24,33,0.90);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow:hidden;
+  }
+  .card h2{
+    margin:0;
+    padding: 12px 12px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    font-size: 14px;
+  }
+  .card h2 span{ font-weight: 900; letter-spacing:0.2px; }
+  .card .body{ padding: 12px; }
+  .small{ font-size: 12px; color: var(--muted); }
+  .row{ display:flex; align-items:center; gap:10px; }
+  .pill{
+    display:inline-flex;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.14);
+    background: rgba(255,255,255,0.06);
+    font-size: 12px;
+    font-weight: 850;
+  }
 
-    .buildTools{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-    .toolBtn.active{ border-color:#7bdcff; box-shadow:0 0 0 2px rgba(123,220,255,0.12) inset; }
-    .prop{ border:1px solid #262b40; background:#0f1426; border-radius:12px; padding:8px; margin-top:10px; }
-    .prop b{ font-size:12px; }
+  .canvasWrap{
+    background: rgba(18,24,33,0.55);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 16px;
+    padding: 10px;
+    position:relative;
+  }
+  canvas{
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+    background: rgba(0,0,0,0.22);
+    border: 1px solid rgba(255,255,255,0.10);
+    touch-action: none;
+  }
+  .canvasHelp{
+    position:absolute;
+    left: 16px;
+    top: 16px;
+    display:flex;
+    gap: 8px;
+    flex-wrap:wrap;
+    pointer-events:none;
+  }
 
-    .toast{ position:fixed; left:50%; transform:translateX(-50%); bottom:14px; background:#0f1426; border:1px solid #2b3350; border-radius:999px; padding:8px 12px; color:#dfe6ff; font-size:12px; opacity:0; transition:opacity .2s; pointer-events:none;}
-    .toast.show{ opacity:1; }
+  .toolGrid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .toolBtn{
+    display:flex; justify-content:space-between; align-items:center;
+    padding: 10px 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.05);
+    cursor:pointer;
+    font-weight:800;
+    user-select:none;
+  }
+  .toolBtn.active{
+    border-color: rgba(255,210,91,0.38);
+    background: rgba(255,210,91,0.10);
+  }
 
-    @media (max-width: 900px){
-      .wrap{ flex-direction:column; }
-      .right{ width:auto; max-width:none; }
-      canvas{ height:52vh; }
-    }
+  .kv{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 10px;
+    margin-top: 4px;
+    align-items:center;
+  }
+  .kv .k{ font-size: 12px; color: var(--muted); }
+  .kv .v{ font-size: 13px; font-weight: 850; }
+
+  .ticketList{ display:flex; flex-direction:column; gap:8px; margin-top:8px; }
+  .ticket{
+    padding: 10px 10px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.10);
+    background: rgba(255,255,255,0.04);
+  }
+  .ticket .top{ display:flex; justify-content:space-between; gap:10px; align-items:center; }
+  .ticket .title{ font-weight: 900; font-size: 13px; }
+  .ticket .meta{ font-size: 12px; color: var(--muted); }
+
+  .staffList{ display:flex; flex-direction:column; gap:8px; margin-top:10px; max-height:220px; overflow:auto; padding-right:6px;}
+  .staff{
+    border:1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.04);
+    border-radius: 14px;
+    padding: 10px 10px;
+  }
+  .staff .top{ display:flex; justify-content:space-between; gap:10px; align-items:center; }
+  .staff .name{ font-weight: 900; }
+  .miniBar{ height:6px; border-radius:999px; background: rgba(255,255,255,0.08); overflow:hidden; }
+  .miniBar > div{ height:100%; background: rgba(255,210,91,0.55); width:50%; }
+
+  .toast{
+    position: fixed;
+    left: 50%;
+    bottom: 18px;
+    transform: translateX(-50%);
+    background: rgba(20,22,26,0.96);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-weight: 800;
+    font-size: 13px;
+    opacity:0;
+    pointer-events:none;
+    transition: opacity 0.2s ease;
+    z-index: 50;
+  }
+
+  .modal{
+    position:fixed; inset:0;
+    background:rgba(0,0,0,0.55);
+    display:none; align-items:center; justify-content:center;
+    padding:18px;
+    z-index:60;
+  }
+  .modal.show{ display:flex; }
+  .modalInner{
+    max-width:680px;
+    width:100%;
+    background:rgba(20,22,26,0.98);
+    border:1px solid rgba(255,255,255,0.14);
+    border-radius:16px;
+    padding:16px 16px 14px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+  }
+
+  .tipBubble{
+    position:fixed;
+    left:0; right:0; bottom:0;
+    padding:14px;
+    display:none;
+    z-index:70;
+  }
+  .tipBubble.show{ display:block; }
+  .tipInner{
+    max-width:780px;
+    margin:0 auto;
+    background:rgba(20,22,26,0.98);
+    border:1px solid rgba(255,255,255,0.14);
+    border-radius:16px;
+    padding:12px 12px 10px;
+    box-shadow: 0 -14px 50px rgba(0,0,0,0.5);
+  }
+  .tipIcon{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:18px; height:18px;
+    border-radius:999px;
+    border:1px solid rgba(255,255,255,0.25);
+    background:rgba(255,255,255,0.06);
+    font-weight:900;
+    font-size:12px;
+    margin-left:10px;
+    cursor:pointer;
+    user-select:none;
+  }
+  .coachGlow{
+    outline: 3px solid rgba(255,210,91,0.85);
+    outline-offset: 3px;
+    border-radius: 12px;
+  }
+
+  @media (max-width: 980px){
+    .wrap{ grid-template-columns: 1fr; }
+    .left{ order: 2; }
+    .right{ order: 1; }
+    button, select{ padding:10px 12px; font-size:14px; }
+    input[type="range"]{ width: 150px; }
+  }
   </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="left">
-    <canvas id="c" width="1200" height="760" aria-label="Restaurant map"></canvas>
-  </div>
-
-  <div class="right">
-    <div class="card">
-      <h2>
-        <span>Restaurant Tycoon — Flat Pack</span>
-        <span class="pill" id="modePill">Build</span>
-      </h2>
-      <div class="body">
-        <div class="row" style="justify-content:space-between;">
-          <div class="pill">Day <span id="dayPill">1</span></div>
-          <div class="pill">Speed <span id="speedText">1×</span></div>
-        </div>
-
-        <div class="row" style="margin-top:10px;">
-          <button class="primary" id="btnBuildToggle">Enter Build</button>
-          <button class="primary" id="btnStart" disabled>Start Service</button>
-          <button id="btnPause" disabled>Pause</button>
-          <button id="btnSpeed">Speed Up</button>
-          <button class="danger" id="btnReset">Reset</button>
-        </div>
-
-        <div class="hr"></div>
-        <div class="kpi">
-          <div class="box"><div class="label">Cash</div><div class="value" id="cash">$0</div></div>
-          <div class="box"><div class="label">Rating</div><div class="value" id="rating">0.0★</div></div>
-          <div class="box"><div class="label">Profit Today</div><div class="value" id="profitToday">$0</div></div>
-          <div class="box"><div class="label">Shift Left</div><div class="value" id="shiftTime">02:50</div></div>
-        </div>
-
-        <div class="hr"></div>
-        <div class="row">
-          <button id="btnHireCook">Hire Cook (+$120/day)</button>
-          <button id="btnHireWaiter">Hire Waiter (+$95/day)</button>
-          <button id="btnHireJanitor">Hire Janitor (+$90/day)</button>
-          <button id="btnAutoAssign">Auto Assign Stations</button>
-        </div>
-        <div class="small" style="margin-top:8px;">
-          New Stage 5: <b>Build Mode</b> — place tables & stations, and expand your floor plan.
-        </div>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">RT</div>
+      <div>
+        <h1>Restaurant Tycoon <span class="muted">— Single File Modular v18</span></h1>
+        <div class="sub">One file for GitHub. Internally modular (mini module-loader). Tap + drag build. Inspector never loses items.</div>
       </div>
     </div>
 
-    <div class="card" id="buildCard">
-      <h2>
-        <span>Build Mode · Layout</span>
-        <span class="pill" id="buildPill">Editing</span>
-      </h2>
-      <div class="body">
-        <div class="small">Pick a tool, then tap/click the floor. Drag items to reposition. Stage 6 adds <b>kitchen equipment</b> (walk-in, dishwasher, extra cooktop).</div>
+    <div class="controls">
+      <button class="primary" id="btnStart">Start Service</button>
+      <button id="btnPause">Pause</button>
+      <button id="btnSpeed">Speed ×1</button>
+      <button class="danger" id="btnReset">Reset</button>
 
-        <div class="hr"></div>
-        <div class="buildTools">
-          <button class="toolBtn active" data-tool="select">Select / Move</button>
-          <button class="toolBtn" data-tool="table">Add Table ($250)</button>
-          <button class="toolBtn" data-tool="prep">Add PREP Bench ($400)</button>
-          <button class="toolBtn" data-tool="cook">Add COOK Line ($600)</button>
-          <button class="toolBtn" data-tool="pass">Add PASS ($350)</button>
-          <button class="toolBtn" data-tool="walkin">Add Walk-In ($900)</button>
-          <button class="toolBtn" data-tool="dish">Add Dishwasher ($650)</button>
-          <button class="toolBtn" data-tool="extra">Add Extra Cooktop ($500)</button>
-        </div>
+      <select id="presetSel" title="Preset">
+        <option value="bistro">Bistro</option>
+        <option value="cafe">Cafe</option>
+        <option value="fine">Fine Dining</option>
+      </select>
+      <button id="btnApplyPreset">Apply Preset</button>
+      <button id="btnFixNext">Fix Next</button>
 
-        <div class="hr"></div>
-        <div class="row">
-          <button id="btnExpandFloor">Expand Floor +80w</button>
-          <button id="btnExpandKitchen">Expand Kitchen +60h</button>
-          <button class="danger" id="btnDelete" disabled>Delete Selected</button>
-        </div>
-        <div class="small" id="expandHint" style="margin-top:8px;">Expansion costs scale up each time.</div>
-
-        <div class="prop" id="propBox" style="display:none;">
-          <div class="row" style="justify-content:space-between; align-items:flex-start;">
-            <div>
-              <b id="propTitle">Selected</b>
-              <div class="small" id="propSub">—</div>
-            </div>
-            <span class="pill" id="propPill">—</span>
-          </div>
-
-          <div class="row" id="tableProps" style="margin-top:8px; display:none;">
-            <span class="small">Seats</span>
-            <button class="mini" id="btnSeatsMinus">−</button>
-            <input type="number" id="inpSeats" min="1" max="6" step="1" value="2" />
-            <button class="mini" id="btnSeatsPlus">+</button>
-          </div>
-
-          <div class="row" id="stationProps" style="margin-top:8px; display:none;">
-            <span class="small">Station type</span>
-            <span class="pill" id="stationTypePill">—</span>
-          </div>
-
-          <div class="small" style="margin-top:8px;">
-            Tip: More physical stations increase <b>max capacity</b> (up to staffing).
-          </div>
-        </div>
-      </div>
+      <button id="btnTutorial">Tutorial</button>
+      <button id="btnHints">Hints: On</button>
+      <button id="btnSnap">Snap: On</button>
     </div>
+  </header>
 
-    <div class="card">
-      <h2><span>Staff · Stations</span><span class="pill" id="staffPill">—</span></h2>
-      <div class="body">
-        <div class="small">Assign cooks to PREP / COOK / PASS / FLOAT. Station coverage affects speed and mistakes.</div>
-        <div class="staffList" id="staffList"></div>
-      </div>
-    </div>
-
-    
-    <div class="card">
-      <h2><span>Reservations</span><span class="pill" id="resPill">—</span></h2>
-      <div class="body">
-        <div class="small">Balance <b>walk-ins vs bookings</b>. Hold tables for upcoming reservations to avoid VIP blowups.</div>
-
-        <div class="row" style="gap:10px; flex-wrap:wrap; margin-top:10px;">
-          <label class="small">Bookings % <b id="resPctLbl">55</b>%<br>
-            <input type="range" id="resPct" min="0" max="90" value="55" style="width:160px;">
-          </label>
-
-          <label class="small">VIP % <b id="vipPctLbl">6</b>%<br>
-            <input type="range" id="vipPct" min="0" max="20" value="6" style="width:160px;">
-          </label>
-
-          <label class="small">Overbook % <b id="overbookLbl">10</b>%<br>
-            <input type="range" id="overbookPct" min="0" max="30" value="10" style="width:160px;">
-          </label>
-        </div>
-
-        <div class="row" style="gap:10px; flex-wrap:wrap; margin-top:8px;">
-          <label class="small"><input type="checkbox" id="acceptWalkins" checked> Accept walk-ins</label>
-          <label class="small"><input type="checkbox" id="holdTables" checked> Hold tables for reservations</label>
-          <button id="btnRegenerateRes">Regenerate bookings (today)</button>
-        </div>
-
-        <div class="small" style="margin-top:10px;">Upcoming (next 6):</div>
-        <div id="resList" class="ticketList"></div>
-      </div>
-    </div>
-
-<div class="card">
-      <h2><span>Live Tickets</span><span class="pill" id="ticketCount">0</span></h2>
-      <div class="body">
-        <div class="row" style="justify-content:space-between; margin-bottom:8px;">
-          <span class="small">86 Board: <b id="board86">None</b></span>
-          <span class="pill" id="physPill">Tables 0 · Stations 0</span>
-        </div>
-        <div class="row" style="justify-content:space-between; margin-bottom:8px;">
-          <span class="small">Dishpit: <b id="dishText">Plates 0/0 · Dirty 0</b></span>
+  <main class="wrap">
+    <section class="right">
+      <div class="canvasWrap">
+        <canvas id="game" width="900" height="680"></canvas>
+        <div class="canvasHelp">
+          <span class="pill" id="modePill">BUILD</span>
           <span class="pill" id="bottlePill">Bottleneck: —</span>
+          <span class="pill" id="resPill">Reservations: —</span>
+          <span class="pill" id="touchPill">Tap: place · Drag: move · Tap item: select</span>
         </div>
-        <div class="ticketBox" id="tickets"></div>
-        <div class="small">Build mode is disabled during service.</div>
+      </div>
+    </section>
+
+    <aside class="left">
+      <div class="card">
+        <h2><span>Build Tools</span></h2>
+        <div class="body">
+          <div class="small">Choose a tool, then tap the canvas to place. Tap an item to select. Drag to move.</div>
+          <div class="toolGrid" id="toolGrid"></div>
+          <div class="row" style="margin-top:10px; gap:10px; flex-wrap:wrap;">
+            <button id="btnDeleteSel" class="danger">Delete Selected</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="inspectorCard">
+        <h2><span>Inspector</span><span class="pill" id="selPill">None</span></h2>
+        <div class="body" id="inspectorBody"></div>
+      </div>
+
+      <div class="card">
+        <h2><span>Staff</span><span class="pill" id="staffPill">—</span></h2>
+        <div class="body">
+          <div class="row" style="gap:8px; flex-wrap:wrap;">
+            <button id="btnHireCook">Hire Cook</button>
+            <button id="btnHireWaiter">Hire Waiter</button>
+            <button id="btnHireJanitor">Hire Janitor</button>
+            <button id="btnAutoAssign">Auto Assign Stations</button>
+          </div>
+          <div class="small" style="margin-top:8px;">
+            Cooks have <b>skills</b> for PREP/COOK/PASS. Throughput is limited by both <b>stations</b> and <b>staff assigned</b>.
+          </div>
+          <div id="staffList" class="staffList"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span>Live Hints</span><span class="pill" id="hintPill">—</span></h2>
+        <div class="body">
+          <div id="hintText" class="small" style="line-height:1.35;">Hints will appear here.</div>
+          <div class="row" style="gap:8px; flex-wrap:wrap; margin-top:10px;">
+            <button id="btnHintPrev">◀</button>
+            <button id="btnHintNext">▶</button>
+            <button id="btnHintPin">Pin: Off</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span>Service</span><span class="pill" id="svcPill">—</span></h2>
+        <div class="body">
+          <div class="kv">
+            <div class="k">Cash</div><div class="v" id="cashLbl">$—</div>
+            <div class="k">Rating</div><div class="v" id="ratingLbl">—</div>
+            <div class="k">Cleanliness</div><div class="v" id="cleanLbl">—</div>
+            <div class="k">Plates</div><div class="v" id="platesLbl">—</div>
+            <div class="k">Profit (Shift)</div><div class="v" id="profitLbl">$—</div>
+            <div class="k">Shift Left</div><div class="v" id="shiftLbl">—</div>
+          </div>
+          <div class="small" style="margin-top:10px;">86: <b id="board86">None</b></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span>Reservations</span><span class="pill" id="resMiniPill">—</span></h2>
+        <div class="body">
+          <div class="row" style="gap:10px; flex-wrap:wrap; margin-top:2px;">
+            <label class="small">Bookings % <b id="resPctLbl">55</b>%<br>
+              <input type="range" id="resPct" min="0" max="90" value="55">
+            </label>
+            <label class="small">VIP % <b id="vipPctLbl">6</b>%<br>
+              <input type="range" id="vipPct" min="0" max="20" value="6">
+            </label>
+            <label class="small">Overbook % <b id="overbookLbl">10</b>%<br>
+              <input type="range" id="overbookPct" min="0" max="30" value="10">
+            </label>
+          </div>
+          <div class="row" style="gap:10px; flex-wrap:wrap; margin-top:10px;">
+            <label class="small"><input type="checkbox" id="acceptWalkins" checked> Accept walk-ins</label>
+            <label class="small"><input type="checkbox" id="holdTables" checked> Hold tables</label>
+            <button id="btnRegenerateRes">Regenerate (today)</button>
+          </div>
+          <div class="small" style="margin-top:10px;">Upcoming (next 6):</div>
+          <div id="resList" class="ticketList"></div>
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="modal" id="tutorialModal" aria-hidden="true">
+    <div class="modalInner">
+      <div class="row" style="justify-content:space-between; align-items:center; gap:10px;">
+        <h2 style="margin:0;">Tutorial</h2>
+        <button id="btnTutClose">Close</button>
+      </div>
+      <div class="small" id="tutStepMeta" style="margin-top:8px; opacity:0.85;"></div>
+      <div id="tutStepTitle" style="font-weight:800; margin-top:8px; font-size:16px;"></div>
+      <div id="tutStepBody" class="small" style="margin-top:10px; line-height:1.4;"></div>
+      <div class="row" style="justify-content:space-between; gap:10px; margin-top:14px; flex-wrap:wrap;">
+        <div class="row" style="gap:8px; flex-wrap:wrap;">
+          <button id="btnTutPrev">Back</button>
+          <button class="primary" id="btnTutNext">Next</button>
+        </div>
+        <label class="small" style="display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" id="tutDontShow">
+          Don’t auto-open next time
+        </label>
       </div>
     </div>
   </div>
-</div>
 
-<div class="toast" id="toast"></div>
+  <div class="tipBubble" id="tipBubble" aria-hidden="true">
+    <div class="tipInner">
+      <div class="row" style="justify-content:space-between; align-items:center; gap:10px;">
+        <b id="tipTitle">Tip</b>
+        <button id="btnTipClose">Close</button>
+      </div>
+      <div id="tipBody" class="small" style="margin-top:8px; line-height:1.4;"></div>
+    </div>
+  </div>
 
 <script>
-/* ============================================================
-   Restaurant Tycoon — Single-File Flat Pack
-   Stage 9: Reservations + Bookings + VIPs (tables + stations + expansions)
-   - drag & drop
-   - physical stations cap throughput (up to staff capacity)
-   ============================================================ */
+/**
+ * Restaurant Tycoon — Single File Modular v18
+ * One HTML file, but internally modular using a tiny loader:
+ *   RT.define(name, deps[], factory) and RT.require(name)
+ */
+const RT = (() => {
+  const defs = Object.create(null);
+  const cache = Object.create(null);
 
-/* -------------------- Util -------------------- */
-const U = {
-  clamp:(v,a,b)=>Math.max(a,Math.min(b,v)),
-  lerp:(a,b,t)=>a+(b-a)*t,
-  fmtMoney:(n)=>"$"+Math.round(n).toLocaleString(),
-  now:()=>performance.now()/1000,
-  rand:(a,b)=>a+Math.random()*(b-a),
-  pick:(arr)=>arr[(Math.random()*arr.length)|0],
-  uid:()=>Math.random().toString(36).slice(2,9),
-  star:(r)=> (Math.round(r*10)/10).toFixed(1)+"★"
-};
-function toast(msg){
-  const el = document.getElementById("toast");
-  el.textContent = msg;
-  el.classList.add("show");
-  clearTimeout(toast._t);
-  toast._t = setTimeout(()=>el.classList.remove("show"), 1500);
-}
-function pct(n){ return Math.round(U.clamp(n,0,1)*100); }
-
-/* -------------------- Data -------------------- */
-const DATA = {
-  shiftSeconds: 170,
-  spawnBase: 0.22,
-  spawnMin: 0.08,
-  spawnMax: 0.55,
-  cleanlinessDecay: 0.0028,
-  litterChance: 0.025,
-  ratingFloor: 1.5,
-  ratingCeil: 5.0,
-  stations: ["PREP","COOK","PASS"],
-  spoilRate: 0.22,
-
-  // Costs
-  costTable: 250,
-  costPrep: 400,
-  costCook: 600,
-  costPass: 350,
-
-  // Kitchen equipment (Stage 6)
-  costWalkIn: 900,
-  costDish: 650,
-  costExtraCook: 500,
-
-  // Dishpit / plates (Stage 7)
-  platesBase: 44,
-  plateCostPerUse: 0.0,
-  plateShortagePenaltyPerSec: 0.0012,
-  washRateNoMachine: 0.18,     // plates/sec
-  washRatePerMachine: 0.62,    // plates/sec each dishwasher
-  dishOverflowDirtyFrac: 0.65, // if too many dirty plates pile up
-  dishOverflowCleanPenalty: 0.0018,
-
-  // FOH (Stage 9)
-  wageWaiterPerDay: 95,
-  fohOrderDelayBase: 2.4,
-  fohRunBase: 4.0,
-  fohMistakeBase: 0.035,
-  fohMistakeOverload: 0.085,
-  fohWrongRunPenaltySec: 10,
-  fohCompChanceOnWrong: 0.30,
-
-  // Reservations (Stage 9)
-  resHoldWindowSec: 22,
-  resLateGraceSec: 16,
-  resBaseNoShow: 0.09,
-  resVipBonus: 0.06,
-  resVipPenalty: 0.09,
-
-  // Expansion scaling
-  expandFloorBase: 1200,
-  expandKitchenBase: 900,
-  expandMult: 1.35,
-
-  // Staff systems
-  fatigueGainPerSec: 0.0032,
-  fatigueRecoverOvernight: 0.42,
-  disruptionPenaltySeconds: 8,
-  baseMistakeChance: 0.028,
-  overloadMistakeBoost: 0.06,
-  mistakeTimePenalty: 6,
-  mistakeQualityPenalty: 0.09,
-
-  // Menu
-  menu: [
-    { id:"burger", name:"Burger & Chips",   price:24, cost:8.5,  steps:[["PREP",5],["COOK",10],["PASS",3]], baseQuality:0.86, tag:"Fast" },
-    { id:"pasta",  name:"Pasta (Ragù)",     price:28, cost:9.5,  steps:[["PREP",6],["COOK",12],["PASS",3]], baseQuality:0.88, tag:"Comfort" },
-    { id:"salad",  name:"Seasonal Salad",   price:20, cost:6.5,  steps:[["PREP",7],["PASS",2]],            baseQuality:0.90, tag:"Light" },
-    { id:"steak",  name:"Steak Frites",     price:42, cost:15.5, steps:[["PREP",5],["COOK",16],["PASS",4]], baseQuality:0.84, tag:"Premium" },
-  ]
-};
-
-/* -------------------- Layout Defaults -------------------- */
-function defaultLayout(){
-  return {
-    diningRect: {x:70,y:70,w:640,h:360},
-    kitchenRect:{x:70,y:450,w:640,h:200},
-    entry:{x:750,y:120},
-    tables: [
-      {id:"T1", x:140,y:120,seats:2},
-      {id:"T2", x:280,y:120,seats:2},
-      {id:"T3", x:420,y:120,seats:2},
-      {id:"T4", x:140,y:250,seats:2},
-      {id:"T5", x:280,y:250,seats:2},
-      {id:"T6", x:420,y:250,seats:2},
-    ],
-    stations: [
-      {id:"P1", type:"PREP", x:170,y:525},
-      {id:"C1", type:"COOK", x:360,y:525},
-      {id:"X1", type:"PASS", x:550,y:525},
-    ],
-    equipment: [
-      {id:"W1", type:"WALKIN", x:520, y:585},
-      {id:"D1", type:"DISH",   x:300, y:585},
-      {id:"E1", type:"EXTRA_COOK", x:410, y:615}
-    ],
-    expand: { floorLevel:0, kitchenLevel:0 }
-  };
-}
-
-/* -------------------- State -------------------- */
-const Game = {
-  mode:"BUILD",        // BUILD or SERVICE or REPORT
-  building:true,
-  running:false,
-  paused:false,
-  speedIdx:0,
-  speedList:[1,2,4],
-  day:1,
-  t:0,
-  cash: 420,
-  rating: 3.6,
-  cleanliness: 0.92,
-  janitors: 0,
-
-  // FOH
-  waiters: 2,
-
-  // reservations (Stage 9)
-  resSettings: { pct:55, vipPct:6, overbookPct:10, acceptWalkins:true, holdTables:true },
-  reservations: [],
-  heldTableIds: [],
-  resStats: { scheduled:0, seated:0, noShow:0, late:0 },
-
-  // plates / dishpit
-  platesTotal: 44,
-  platesClean: 44,
-  platesDirty: 0,
-  wageJanitorPerDay: 90,
-  cooks: [],
-  wageCookPerDay: 120,
-
-  menuPrices: {},
-  parPlan: {},
-  carryStock: {},
-  stock: {},
-  outOfStock: new Set(),
-
-  // derived at runtime
-  tables: [],
-  guests: [],
-  tickets: [],
-  stationsRuntime: {},
-
-  stats: null,
-  spawnAcc: 0,
-  reportOpen: false,
-
-  // layout (editable)
-  layout: defaultLayout(),
-
-  // build selection
-  tool:"select",       // select, table, prep, cook, pass
-  selected: null,      // {kind:"table"/"station", id}
-  drag: null,
-};
-
-function dishById(id){ return DATA.menu.find(d=>d.id===id); }
-function getPrice(d){
-  const v = Game.menuPrices[d.id];
-  return (typeof v==="number" && isFinite(v) && v>0) ? v : d.price;
-}
-function getPar(d){
-  const v = Game.parPlan[d.id];
-  return (typeof v==="number" && isFinite(v) && v>=0) ? Math.round(v) : 12;
-}
-
-/* -------------------- Staff Generation -------------------- */
-const NAMES = ["Kai","Mina","Theo","Ava","Luca","Noah","Zoe","Isla","Jett","Sage","Aria","Milo","Nico","Ivy","Eli","Juno","Skye","Remi","Finn","Elsie"];
-function randSkill(base=0.55, spread=0.25){
-  return U.clamp(base + (Math.random()-0.5)*2*spread, 0.15, 0.95);
-}
-function createCook(){
-  const id = "C"+U.uid();
-  const name = U.pick(NAMES) + " " + U.pick(["P.","K.","R.","S.","T.","M.","L."]);
-  const archetype = Math.random();
-  let sPrep = randSkill(0.58,0.25), sCook = randSkill(0.58,0.25), sPass = randSkill(0.52,0.25);
-  if(archetype < 0.33){ sCook = randSkill(0.70,0.18); }
-  else if(archetype < 0.66){ sPrep = randSkill(0.70,0.18); }
-  else { sPass = randSkill(0.68,0.20); }
-  return { id, name, wage:Game.wageCookPerDay, assign:"COOK", skills:{PREP:sPrep, COOK:sCook, PASS:sPass}, fatigue:0 };
-}
-function ensureDefaultCooks(){
-  if(Game.cooks.length === 0){
-    Game.cooks.push(createCook(), createCook(), createCook());
-    autoAssignStations(true);
+  function define(name, deps, factory){
+    defs[name] = { deps: deps || [], factory };
   }
-}
-function cookSkillFactor(c, station){
-  const s = U.clamp(c.skills[station] ?? 0.5, 0.1, 0.99);
-  const base = 0.55 + s*0.85;  // 0.63..1.39
-  const fatiguePenalty = 1 - (U.clamp(c.fatigue,0,1) * 0.45);
-  return base * fatiguePenalty;
-}
-function stationCoverage(){
-  const counts = {PREP:0, COOK:0, PASS:0, FLOAT:0};
-  for(const c of Game.cooks){
-    if(counts[c.assign] != null) counts[c.assign] += 1;
+  function require(name){
+    if(cache[name]) return cache[name];
+    const def = defs[name];
+    if(!def) throw new Error("Module not found: " + name);
+    const args = def.deps.map(require);
+    const api = def.factory.apply(null, args) || {};
+    cache[name] = api;
+    return api;
   }
-  return counts;
-}
-function autoAssignStations(silent=false){
-  for(const c of Game.cooks) c.assign = "FLOAT";
-  const bestFor = (station)=>{
-    let best=null, bestScore=-1;
-    for(const c of Game.cooks){
-      if(c.assign !== "FLOAT") continue;
-      const sc = c.skills[station] ?? 0.5;
-      if(sc > bestScore){ bestScore=sc; best=c; }
+  return { define, require };
+})();
+
+// -------------------- util --------------------
+RT.define("util", [], () => {
+  const U = {
+    clamp:(v,a,b)=>Math.max(a,Math.min(b,v)),
+    r:(a,b)=>a+Math.random()*(b-a),
+    ri:(a,b)=>Math.floor(a+Math.random()*(b-a+1)),
+    uid:(p="ID")=>`${p}${Math.random().toString(16).slice(2,6)}${Date.now().toString(16).slice(-4)}`,
+    fmtMoney:(n)=>`$${Math.max(0,n).toFixed(0)}`,
+    fmtTime:(sec)=>{
+      const s=Math.max(0,Math.floor(sec));
+      const m=Math.floor(s/60);
+      const r=(s%60).toString().padStart(2,"0");
+      return `${m}:${r}`;
     }
-    if(best) best.assign = station;
   };
-  bestFor("PREP"); bestFor("COOK"); bestFor("PASS");
-  saveGame();
-  buildStaffUI();
-  if(!silent) toast("Auto assigned stations.");
-}
-function changeAssignment(cookId, newStation){
-  const c = Game.cooks.find(x=>x.id===cookId);
-  if(!c || c.assign===newStation) return;
-  c.assign = newStation;
-  if(Game.running && !Game.reportOpen){
-    Game._disruptionUntil = Math.max(Game._disruptionUntil||0, Game.t + DATA.disruptionPenaltySeconds);
-    updateRating(-0.01);
-    toast("Mid-service station change: disruption!");
+  return U;
+});
+
+// -------------------- data --------------------
+RT.define("data", [], () => {
+  const MENU = [
+    {id:"burger", name:"Burger", price:24, cost:7, prep:1.0, cook:1.2, pass:0.6, invKey:"beef"},
+    {id:"pasta", name:"Pasta", price:28, cost:8, prep:1.1, cook:1.3, pass:0.6, invKey:"pasta"},
+    {id:"salad", name:"Salad", price:20, cost:5, prep:1.2, cook:0.2, pass:0.5, invKey:"greens"},
+    {id:"fish", name:"Fish", price:34, cost:11, prep:1.0, cook:1.5, pass:0.7, invKey:"fish"},
+    {id:"steak", name:"Steak", price:42, cost:14, prep:0.9, cook:1.8, pass:0.7, invKey:"beef"},
+    {id:"dessert", name:"Dessert", price:18, cost:4, prep:0.8, cook:0.2, pass:0.7, invKey:"dessert"},
+  ];
+  const defaultInventory = () => ({ beef: 18, pasta: 18, greens: 18, fish: 14, dessert: 20 });
+  const WAGES = { cookPerShift: 120, waiterPerShift: 95, janitorPerShift: 90 };
+  const NAMES = ["Ava","Noah","Mia","Oliver","Luca","Sienna","Kai","Amara","Zara","Theo","Ivy","Leo","Aria","Finn","Maya","Jude","Remy","Piper"];
+  const TOOL_DEFS = [
+    {key:"select", label:"Select/Move", zone:"any"},
+    {key:"table2", label:"Table (2)", zone:"dining"},
+    {key:"table4", label:"Table (4)", zone:"dining"},
+    {key:"prep", label:"Station: PREP", zone:"kitchen"},
+    {key:"cook", label:"Station: COOK", zone:"kitchen"},
+    {key:"pass", label:"Station: PASS", zone:"kitchen"},
+    {key:"dish", label:"Dishwasher", zone:"kitchen"},
+    {key:"walkin", label:"Walk-in", zone:"kitchen"},
+    {key:"extraCook", label:"Extra cooktop", zone:"kitchen"},
+  ];
+  const SHIFT_SECONDS = 180;
+  return { MENU, defaultInventory, WAGES, NAMES, TOOL_DEFS, SHIFT_SECONDS };
+});
+
+// -------------------- storage --------------------
+RT.define("storage", [], () => {
+  const KEY = "rt_single_modular_v18";
+  const tutorialKey = "rt_tutorial_seen_v18";
+  const save = (S)=>{ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} };
+  const load = ()=>{ try{ const s=localStorage.getItem(KEY); return s?JSON.parse(s):null; }catch(e){ return null; } };
+  const clear = ()=>{ try{ localStorage.removeItem(KEY); }catch(e){} };
+  const tutSeen = ()=>{ try{ return localStorage.getItem(tutorialKey)==="1"; }catch(e){ return false; } };
+  const setTutSeen = ()=>{ try{ localStorage.setItem(tutorialKey,"1"); }catch(e){} };
+  return { save, load, clear, tutSeen, setTutSeen };
+});
+
+// -------------------- staff --------------------
+RT.define("staff", ["util","data"], (U, D) => {
+  function randSkill(mu=0.6, spread=0.22){
+    const v = mu + (Math.random()*2-1)*spread;
+    return U.clamp(v, 0.25, 0.95);
   }
-  saveGame();
-}
-
-/* -------------------- Economy & Rating -------------------- */
-function freshStats(){
-  return {
-    served:0, left:0, revenue:0, costs:0, wages:0,
-    waitTotal:0, waitCount:0, comped:0,
-    prepCost:0, wasteCost:0,
-    outEvents:0, emergency:0, mistakes:0,
-    issues:{slow:0, dirty:0, value:0, out:0}
-  };
-}
-function applyDailyWages(){
-  const cookWages = Game.cooks.reduce((s,c)=>s + (c.wage||Game.wageCookPerDay), 0);
-  const waiterWages = (Game.waiters||0) * DATA.wageWaiterPerDay;
-  const janWages = Game.janitors * Game.wageJanitorPerDay;
-  const wages = cookWages + waiterWages + janWages;
-  Game.cash -= wages;
-  Game.stats.wages = wages;
-}
-function addRevenue(n){ Game.cash += n; Game.stats.revenue += n; }
-function addCost(n){ Game.cash -= n; Game.stats.costs += n; }
-function updateRating(delta){ Game.rating = U.clamp(Game.rating + delta, DATA.ratingFloor, DATA.ratingCeil); }
-function foodCostPctToday(){
-  const rev = Game.stats.revenue;
-  if(rev <= 0) return 0;
-  return (Game.stats.costs / rev) * 100;
-}
-function ratingFromSignals(avgWait, cleanliness, valueComplaints, outEvents, mistakes){
-  const waitPenalty = U.clamp((avgWait - 18) / 45, 0, 1);
-  const cleanBonus  = U.clamp((cleanliness - 0.75) / 0.25, 0, 1);
-  const valuePenalty = U.clamp(valueComplaints / 10, 0, 1) * 0.55;
-  const outPenalty = U.clamp(outEvents / 10, 0, 1) * 0.75;
-  const mistakePenalty = U.clamp(mistakes / 12, 0, 1) * 0.65;
-  const base = 2.65 + (cleanBonus*1.6) - (waitPenalty*1.5) - valuePenalty - outPenalty - mistakePenalty;
-  return U.clamp(base, DATA.ratingFloor, DATA.ratingCeil);
-}
-
-/* -------------------- Prep/Stock -------------------- */
-function estimatePrepCost(){
-  let cost=0;
-  for(const d of DATA.menu){
-    const par = getPar(d);
-    const carry = Math.round(Game.carryStock[d.id] ?? 0);
-    cost += Math.max(0, par - carry) * d.cost;
+  function createCook(){
+    const id = "C"+U.uid();
+    const name = D.NAMES[Math.floor(Math.random()*D.NAMES.length)] + " " + ["P.","K.","R.","S.","T.","M.","L."][U.ri(0,6)];
+    const archetype = Math.random();
+    let sPrep = randSkill(0.58,0.25), sCook = randSkill(0.58,0.25), sPass = randSkill(0.52,0.25);
+    if(archetype < 0.33){ sCook = randSkill(0.72,0.18); }
+    else if(archetype < 0.66){ sPrep = randSkill(0.72,0.18); }
+    else { sPass = randSkill(0.68,0.20); }
+    return { id, name, wage: D.WAGES.cookPerShift, assign:"FLOAT", skills:{PREP:sPrep, COOK:sCook, PASS:sPass}, fatigue:0 };
   }
-  return cost;
-}
-function doPrepToPar(){
-  Game.stock = {};
-  Game.outOfStock = new Set();
-  let prepCost=0;
-  for(const d of DATA.menu){
-    const par = getPar(d);
-    const carry = Math.round(Game.carryStock[d.id] ?? 0);
-    const need = Math.max(0, par - carry);
-    Game.stock[d.id] = carry + need;
-    prepCost += need * d.cost;
+  function ensureDefaultCooks(S){
+    if(!S.cooks) S.cooks=[];
+    if(S.cooks.length===0){
+      S.cooks.push(createCook(), createCook(), createCook());
+      autoAssignStations(S);
+    }
   }
-  if(prepCost > 0) addCost(prepCost);
-  Game.stats.prepCost = prepCost;
-}
-function stockFor(id){ return Math.max(0, Math.round(Game.stock[id] ?? 0)); }
-function endOfDaySpoilage(){
-  let wasteCost=0;
-  const ec = equipCounts();
-  const base = DATA.spoilRate;
-  const walk = (ec.WALKIN||0);
-  const spoilRate = U.clamp(base - walk*0.04, 0.12, base);
-  for(const d of DATA.menu){
-    const left = stockFor(d.id);
-    if(left<=0){ Game.carryStock[d.id]=0; continue; }
-    const spoiled = Math.round(left * spoilRate);
-    const carry = Math.max(0, left - spoiled);
-    wasteCost += spoiled * d.cost;
-    Game.carryStock[d.id]=carry;
+  function autoAssignStations(S){
+    for(const c of S.cooks) c.assign="FLOAT";
+    const bestFor = (station)=>{
+      let best=null, bestScore=-1;
+      for(const c of S.cooks){
+        if(c.assign!=="FLOAT") continue;
+        const sc = c.skills[station] ?? 0.5;
+        if(sc > bestScore){ bestScore=sc; best=c; }
+      }
+      if(best) best.assign = station;
+    };
+    bestFor("PREP"); bestFor("COOK"); bestFor("PASS");
   }
-  if(wasteCost>0) addCost(wasteCost);
-  Game.stats.wasteCost = wasteCost;
+  function stationStaffProfile(S, station){
+    const cooks = S.cooks || [];
+    const assigned = cooks.filter(c=>c.assign===station);
+    const floats = cooks.filter(c=>c.assign==="FLOAT");
+    const floatWeight = 0.6;
 
-/* -------------------- Dishpit / Plates (Stage 9) -------------------- */
-function washRatePerSec(){
-  const ec = equipCounts();
-  const machines = (ec.DISH||0);
-  const base = (machines>0) ? (0.22 + machines*DATA.washRatePerMachine) : DATA.washRateNoMachine;
-  const jan = (Game.janitors||0);
-  return base * (1 + jan*0.06);
-}
-function processDishpit(dt){
-  const rate = washRatePerSec();
-  const wash = Math.min(Game.platesDirty, rate*dt);
-  Game.platesDirty = U.clamp(Game.platesDirty - wash, 0, Game.platesTotal);
-  Game.platesClean = U.clamp(Game.platesClean + wash, 0, Game.platesTotal);
+    let capacityFloat = assigned.length + floats.length*floatWeight;
+    const scramble = (assigned.length===0 && floats.length===0);
+    const baseCap = scramble ? 0.75 : 0;
+    capacityFloat = Math.max(baseCap, capacityFloat);
 
-  const dirtyFrac = Game.platesDirty / Math.max(1, Game.platesTotal);
-  if(dirtyFrac > DATA.dishOverflowDirtyFrac){
-    const overflow = (dirtyFrac - DATA.dishOverflowDirtyFrac) / (1 - DATA.dishOverflowDirtyFrac);
-    Game.cleanliness = U.clamp(Game.cleanliness - overflow * DATA.dishOverflowCleanPenalty * dt * 60, 0, 1);
+    let staffCap = Math.max(1, Math.floor(capacityFloat + 0.5));
+
+    let head=0, speedSum=0;
+    for(const c of assigned){
+      const s = U.clamp(c.skills[station] ?? 0.55, 0.25, 0.95);
+      head += 1.0; speedSum += s;
+    }
+    for(const c of floats){
+      const s = U.clamp(c.skills[station] ?? 0.55, 0.25, 0.95);
+      head += floatWeight; speedSum += s*floatWeight;
+    }
+    const avgSkill = (head>0) ? (speedSum/head) : (scramble ? 0.75 : 0.9);
+    const speed = U.clamp(avgSkill / 1.10, 0.65, 1.25);
+
+    return {capacity: staffCap, speed};
   }
-}
+  return { createCook, ensureDefaultCooks, autoAssignStations, stationStaffProfile };
+});
 
-/* -------------------- FOH Helpers (Stage 8) -------------------- */
-function fohOverload(){
-  // 1.0 == balanced; >1 overloaded
-  const activeTables = Game.tables.filter(t=>t.occupied).length;
-  const w = Math.max(0, Game.waiters||0);
-  const cap = Math.max(1, w*4); // 1 waiter can reasonably cover ~4 tables in this abstract model
-  return activeTables / cap;
-}
-function fohOrderExtraDelay(){
-  const ov = fohOverload();
-  const base = DATA.fohOrderDelayBase;
-  return base * U.clamp(ov-0.9, 0, 2.5);
-}
-function fohRunDelayForParty(party){
-  const L = Game.layout;
-  const pickX = L.kitchenRect.x + L.kitchenRect.w - 90;
-  const pickY = L.kitchenRect.y + 60;
-  const tb = Game.tables.find(t=>t.id===party.tableId) || {x:pickX, y:pickY};
-  const dx = (tb.x+40) - pickX, dy = (tb.y+30) - pickY;
-  const dist = Math.sqrt(dx*dx+dy*dy);
-  const ov = fohOverload();
-  return (DATA.fohRunBase + dist/240) * (1 + U.clamp(ov-1, 0, 2.5)*0.55);
-}
-function fohWrongTableChance(){
-  const ov = fohOverload();
-  return U.clamp(DATA.fohMistakeBase + U.clamp(ov-1, 0, 3)*DATA.fohMistakeOverload, 0.01, 0.35);
-}
+// -------------------- presets --------------------
+RT.define("presets", ["util","data"], (U, D) => {
+  function presetLayout(kind){
+    const base = {
+      diningRect:{x:70,y:70,w:640,h:360},
+      kitchenRect:{x:70,y:450,w:640,h:200},
+      entry:{x:750,y:120},
+      tables:[],
+      stations:[],
+      equipment:[],
+    };
+    if(kind==="cafe"){
+      base.tables = [
+        {id:"T1", x:150,y:120,seats:2},{id:"T2", x:300,y:120,seats:2},{id:"T3", x:450,y:120,seats:2},{id:"T4", x:600,y:120,seats:2},
+        {id:"T5", x:220,y:250,seats:4},{id:"T6", x:520,y:250,seats:4},
+      ];
+      base.stations = [{id:"P1", type:"PREP", x:180,y:525},{id:"C1", type:"COOK", x:360,y:525},{id:"X1", type:"PASS", x:560,y:525}];
+      base.equipment = [{id:"W1", type:"WALKIN", x:540, y:585},{id:"D1", type:"DISH", x:330, y:600}];
+      return base;
+    }
+    if(kind==="fine"){
+      base.tables = [
+        {id:"T1", x:170,y:120,seats:2},{id:"T2", x:360,y:120,seats:2},{id:"T3", x:550,y:120,seats:2},
+        {id:"T4", x:240,y:260,seats:4},{id:"T5", x:500,y:260,seats:4},
+      ];
+      base.stations = [
+        {id:"P1", type:"PREP", x:150,y:525},{id:"P2", type:"PREP", x:230,y:525},
+        {id:"C1", type:"COOK", x:340,y:525},{id:"C2", type:"COOK", x:430,y:525},
+        {id:"X1", type:"PASS", x:560,y:525},
+      ];
+      base.equipment = [
+        {id:"W1", type:"WALKIN", x:540, y:585},
+        {id:"D1", type:"DISH", x:300, y:585},
+        {id:"D2", type:"DISH", x:370, y:615},
+        {id:"E1", type:"EXTRA_COOK", x:460, y:615}
+      ];
+      return base;
+    }
+    base.tables = [
+      {id:"T1", x:130,y:110,seats:2},{id:"T2", x:270,y:110,seats:2},{id:"T3", x:410,y:110,seats:2},{id:"T4", x:550,y:110,seats:2},
+      {id:"T5", x:130,y:250,seats:2},{id:"T6", x:270,y:250,seats:2},{id:"T7", x:410,y:250,seats:2},{id:"T8", x:550,y:250,seats:2},
+    ];
+    base.stations = [
+      {id:"P1", type:"PREP", x:170,y:525},{id:"C1", type:"COOK", x:330,y:525},{id:"C2", type:"COOK", x:430,y:525},{id:"X1", type:"PASS", x:560,y:525},
+    ];
+    base.equipment = [
+      {id:"W1", type:"WALKIN", x:540, y:585},
+      {id:"D1", type:"DISH", x:300, y:585},
+      {id:"D2", type:"DISH", x:370, y:615},
+      {id:"E1", type:"EXTRA_COOK", x:460, y:615}
+    ];
+    return base;
+  }
+  function presetEconomy(kind){
+    if(kind==="fine"){
+      return { cash:520, rating:4.1, cleanliness:0.96, waiters:3, janitors:1,
+        resSettings:{ pct:75, vipPct:12, overbookPct:6, acceptWalkins:false, holdTables:true } };
+    }
+    if(kind==="cafe"){
+      return { cash:360, rating:3.4, cleanliness:0.90, waiters:1, janitors:0,
+        resSettings:{ pct:20, vipPct:1, overbookPct:15, acceptWalkins:true, holdTables:false } };
+    }
+    return { cash:420, rating:3.6, cleanliness:0.92, waiters:2, janitors:0,
+      resSettings:{ pct:55, vipPct:6, overbookPct:10, acceptWalkins:true, holdTables:true } };
+  }
+  return { presetLayout, presetEconomy };
+});
 
-}
+// -------------------- state --------------------
+RT.define("state", ["data","staff","presets"], (D, Staff, Presets) => {
+  function createState(){
+    const S = {
+      version: 18,
+      mode: "BUILD",
+      running: false,
+      paused: false,
+      speed: 1,
+      snap: true,
+      tool: "select",
+      layout: Presets.presetLayout("bistro"),
+      selected: null,
+      drag: null,
+      cash: 420,
+      rating: 3.6,
+      cleanliness: 0.92,
+      platesTotal: 24,
+      platesClean: 22,
+      platesDirty: 2,
+      waiters: 2,
+      janitors: 0,
+      cooks: [],
+      menu: D.MENU.map(m=>({ ...m })),
+      inv: D.defaultInventory(),
+      t: 0,
+      guests: [],
+      tickets: [],
+      actors: [],
+      effects: [],
+      resSettings: { pct:55, vipPct:6, overbookPct:10, acceptWalkins:true, holdTables:true },
+      reservations: [],
+      heldTableIds: [],
+      resStats: { scheduled:0, seated:0, noShow:0, late:0 },
+      lastWorst: { name:"—", score:0 },
+      board86: [],
+      hints: { enabled:true, pinned:false, idx:0 },
+      shift: { total: D.SHIFT_SECONDS, left: D.SHIFT_SECONDS, startCash: 420, profit: 0 }
+    };
+    Staff.ensureDefaultCooks(S);
+    return S;
+  }
+  function applyPresetToState(S, kind){
+    const L = Presets.presetLayout(kind);
+    const E = Presets.presetEconomy(kind);
+    S.layout = JSON.parse(JSON.stringify(L));
+    S.cash = E.cash;
+    S.rating = E.rating;
+    S.cleanliness = E.cleanliness;
+    S.waiters = E.waiters;
+    S.janitors = E.janitors;
+    S.resSettings = JSON.parse(JSON.stringify(E.resSettings));
 
-/* -------------------- Layout -> Runtime -------------------- */
-function rebuildRuntimeFromLayout(){
-  // tables runtime are derived from layout tables and occupied state
-  Game.tables = Game.layout.tables.map(t=>({ id:t.id, x:t.x, y:t.y, seats:t.seats, occupied:0, party:null }));
-}
-function heldSet(){
-  return new Set(Array.isArray(Game.heldTableIds)?Game.heldTableIds:[]);
-}
-function canSeatParty(size, isRes=false){
-  const hs = heldSet();
-  const hold = !!(Game.resSettings && Game.resSettings.holdTables);
-  return Game.tables.some(t=>{
-    if(t.occupied!==0) return false;
-    if(t.seats < size) return false;
-    if(!isRes && hold && hs.has(t.id)) return false;
+    S.mode="BUILD"; S.running=false; S.paused=false; S.speed=1; S.t=0;
+    S.guests=[]; S.tickets=[]; S.board86=[];
+    S.selected=null; S.drag=null;
+    S.heldTableIds=[]; S.reservations=[]; S.resStats={scheduled:0,seated:0,noShow:0,late:0};
+
+    const seats = (S.layout.tables||[]).reduce((a,t)=>a+(t.seats||2),0);
+    S.platesTotal = Math.max(18, Math.round(seats*1.5));
+    S.platesClean = Math.max(2, S.platesTotal-2);
+    S.platesDirty = 2;
+
+    S.shift.total = D.SHIFT_SECONDS;
+    S.shift.left = D.SHIFT_SECONDS;
+    S.shift.startCash = S.cash;
+    S.shift.profit = 0;
+  }
+  return { createState, applyPresetToState };
+});
+
+// -------------------- world (counts + hit) --------------------
+RT.define("world", ["util"], (U) => {
+  const inRect = (x,y,r)=> (x>=r.x && y>=r.y && x<=r.x+r.w && y<=r.y+r.h);
+
+  function counts(S){
+    const c = { PREP:0, COOK:0, PASS:0, DISH:0, WALKIN:0, EXTRA_COOK:0, tables:S.layout.tables.length, seats:0 };
+    for(const t of S.layout.tables) c.seats += (t.seats||2);
+    for(const st of S.layout.stations) c[st.type] = (c[st.type]||0)+1;
+    for(const e of S.layout.equipment) c[e.type] = (c[e.type]||0)+1;
+    return c;
+  }
+
+  function hitTest(S, x, y){
+    for(let i=S.layout.tables.length-1;i>=0;i--){
+      const t=S.layout.tables[i];
+      if(Math.abs(x-t.x) < 32 && Math.abs(y-t.y) < 26) return { kind:"table", id:t.id };
+    }
+    for(let i=S.layout.stations.length-1;i>=0;i--){
+      const st=S.layout.stations[i];
+      if(Math.abs(x-st.x) < 40 && Math.abs(y-st.y) < 26) return { kind:"station", id:st.id };
+    }
+    for(let i=S.layout.equipment.length-1;i>=0;i--){
+      const e=S.layout.equipment[i];
+      if(Math.abs(x-e.x) < 36 && Math.abs(y-e.y) < 22) return { kind:"equip", id:e.id };
+    }
+    return null;
+  }
+
+  function findSelectedObj(S){
+    if(!S.selected) return null;
+    if(S.selected.kind==="table") return S.layout.tables.find(t=>t.id===S.selected.id);
+    if(S.selected.kind==="station") return S.layout.stations.find(t=>t.id===S.selected.id);
+    if(S.selected.kind==="equip") return S.layout.equipment.find(t=>t.id===S.selected.id);
+    return null;
+  }
+
+  return { inRect, counts, hitTest, findSelectedObj };
+});
+
+// -------------------- build (place/move/delete) --------------------
+RT.define("build", ["util","world"], (U, World) => {
+  function placeAt(S, x, y, toast){
+    const D=S.layout.diningRect, K=S.layout.kitchenRect;
+    const tool=S.tool;
+    const snap = S.snap;
+    const sx = snap ? Math.round(x/10)*10 : x;
+    const sy = snap ? Math.round(y/10)*10 : y;
+
+    if(tool==="select") return;
+
+    const needsDining = (tool==="table2"||tool==="table4");
+    const needsKitchen = !needsDining;
+
+    if(needsDining && !World.inRect(sx,sy,D)){ toast("Place tables inside DINING."); return; }
+    if(needsKitchen && !World.inRect(sx,sy,K)){ toast("Place kitchen items inside KITCHEN."); return; }
+
+    if(tool==="table2"||tool==="table4"){
+      const id = `T${S.layout.tables.length+1}`;
+      S.layout.tables.push({ id, x:sx, y:sy, seats: tool==="table4"?4:2 });
+      S.selected={kind:"table", id};
+      toast(`Placed ${id}`);
+    }
+    if(tool==="prep"||tool==="cook"||tool==="pass"){
+      const type = tool==="prep"?"PREP":(tool==="cook"?"COOK":"PASS");
+      const prefix = type[0];
+      const id = `${prefix}${S.layout.stations.filter(a=>a.type===type).length+1}`;
+      S.layout.stations.push({ id, type, x:sx, y:sy });
+      S.selected={kind:"station", id};
+      toast(`Placed ${type}`);
+    }
+    if(tool==="dish"||tool==="walkin"||tool==="extraCook"){
+      const type = tool==="dish"?"DISH":(tool==="walkin"?"WALKIN":"EXTRA_COOK");
+      const prefix = type==="DISH"?"D":(type==="WALKIN"?"W":"E");
+      const id = `${prefix}${S.layout.equipment.filter(a=>a.type===type).length+1}`;
+      S.layout.equipment.push({ id, type, x:sx, y:sy });
+      S.selected={kind:"equip", id};
+      toast(`Placed ${type}`);
+    }
+  }
+
+  function moveSelectedTo(S, x, y){
+    if(!S.selected) return;
+    const snap=S.snap;
+    const sx = snap ? Math.round(x/10)*10 : x;
+    const sy = snap ? Math.round(y/10)*10 : y;
+    const D=S.layout.diningRect, K=S.layout.kitchenRect;
+
+    const obj = World.findSelectedObj(S);
+    if(!obj) return;
+
+    if(S.selected.kind==="table"){
+      if(!World.inRect(sx,sy,D)) return;
+    }else{
+      if(!World.inRect(sx,sy,K)) return;
+    }
+    obj.x=sx; obj.y=sy;
+  }
+
+  function deleteSelected(S){
+    if(!S.selected) return false;
+    const {kind,id} = S.selected;
+    if(kind==="table"){
+      const i=S.layout.tables.findIndex(t=>t.id===id);
+      if(i>=0) S.layout.tables.splice(i,1);
+    }
+    if(kind==="station"){
+      const i=S.layout.stations.findIndex(t=>t.id===id);
+      if(i>=0) S.layout.stations.splice(i,1);
+    }
+    if(kind==="equip"){
+      const i=S.layout.equipment.findIndex(t=>t.id===id);
+      if(i>=0) S.layout.equipment.splice(i,1);
+    }
+    S.selected=null;
+    S.heldTableIds = (S.heldTableIds||[]).filter(tid=>tid!==id);
     return true;
-  });
-}
-function seatParty(p){
-  const hs = heldSet();
-  const hold = !!(Game.resSettings && Game.resSettings.holdTables);
+  }
 
-  if(p.isReservation && p.reservedTableId){
-    const rt = Game.tables.find(x=>x.id===p.reservedTableId);
-    if(rt && rt.occupied===0 && rt.seats>=p.size){
-      rt.occupied = p.size; rt.party = p.id;
-      p.state="SEATED"; p.tableId=rt.id; p.seatedAt=Game.t; p.note="";
-      Game.resStats.seated += 1;
-      return true;
+  return { placeAt, moveSelectedTo, deleteSelected };
+});
+
+// -------------------- reservations --------------------
+RT.define("reservations", ["util","world"], (U, World) => {
+  function regenerate(S){
+    const settings = S.resSettings;
+    const baseCount = Math.round((World.counts(S).tables * 0.8) * (settings.pct/100));
+    const over = Math.round(baseCount * (settings.overbookPct/100));
+    const total = Math.max(0, baseCount + over);
+    const out = [];
+    for(let i=0;i<Math.min(12,total);i++){
+      const timeMin = 15 + i*8 + U.ri(0,6);
+      const size = [2,2,2,4,4][U.ri(0,4)];
+      const isVip = (Math.random()*100) < settings.vipPct;
+      out.push({ id:`R${i+1}`, timeMin, size, isVip, status:"BOOKED" });
     }
+    S.reservations = out;
+    S.resStats = { scheduled: out.length, seated:0, noShow:0, late:0 };
+  }
+  return { regenerate };
+});
+
+// -------------------- service --------------------
+RT.define("service", ["util","data","world","staff","reservations"], (U, D, World, Staff, Res) => {
+  function availableTableFor(S, size, allowHeld){
+    const candidates = S.layout.tables
+      .filter(t => (t.seats||2) >= size)
+      .filter(t => !S.guests.some(g=>g.tableId===t.id))
+      .filter(t => allowHeld ? true : !(S.heldTableIds||[]).includes(t.id))
+      .sort((a,b)=>(a.seats-b.seats));
+    return candidates[0] || null;
   }
 
-  const candidates = Game.tables
-    .filter(t=>t.occupied===0 && t.seats>=p.size)
-    .filter(t=> (p.isReservation || !hold || !hs.has(t.id)));
-  if(!candidates.length) return false;
-  candidates.sort((a,b)=> (a.seats-b.seats) || (a.x-b.x));
-  const t = candidates[0];
-
-  if(!p.isReservation && hs.has(t.id)){
-    updateRating(-0.01);
-    Game.resStats.late += 1;
+  function start(S, toast){
+    if(S.layout.tables.length===0){ toast("Add tables first."); return false; }
+    S.mode="SERVICE";
+    S.running=true;
+    S.paused=false;
+    // spawn tiny moving sprites for staff/guests
+    try{ RT.require("actors").spawnStaff(S); }catch(e){}
+    S.shift.total = D.SHIFT_SECONDS;
+    S.shift.left = D.SHIFT_SECONDS;
+    S.shift.startCash = S.cash;
+    S.shift.profit = 0;
+    if(!S.reservations || !S.reservations.length) Res.regenerate(S);
+    toast("Service started.");
+    return true;
   }
 
-  t.occupied = p.size; t.party = p.id;
-  p.state="SEATED"; p.tableId=t.id; p.seatedAt=Game.t; p.note="";
-  if(p.isReservation) Game.resStats.seated += 1;
-  return true;
-}
-function clearTable(id){ const t=Game.tables.find(x=>x.id===id); if(t){ t.occupied=0; t.party=null; } }
-
-
-/* -------------------- Guests -------------------- */
-function timeTag(t){
-  // map sim seconds to a dinner clock, 0..shiftSeconds => 17:00..20:00
-  const startMin = 17*60;
-  const endMin = 20*60;
-  const mins = startMin + (endMin-startMin) * (t / DATA.shiftSeconds);
-  const h = Math.floor(mins/60);
-  const m = Math.floor(mins%60);
-  return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");
-}
-function generateReservationsForToday(){
-  const set = Game.resSettings || { pct:55, vipPct:6, overbookPct:10, acceptWalkins:true, holdTables:true };
-  const tables = Game.tables || [];
-  const tableCount = tables.length || 0;
-  const pct = U.clamp((set.pct||55)/100, 0, 0.9);
-  const over = U.clamp((set.overbookPct||10)/100, 0, 0.3);
-  const vipP = U.clamp((set.vipPct||6)/100, 0, 0.2);
-
-  const expectedParties = Math.max(0, Math.round(tableCount * (1.05 + Math.random()*0.25)));
-  const targetRes = Math.round(expectedParties * pct * (1+over));
-
-  const res=[];
-  for(let i=0;i<targetRes;i++){
-    const size = (Math.random()<0.62)?2: (Math.random()<0.55?1:3);
-    const vip = Math.random() < vipP;
-    const at = U.rand(12, DATA.shiftSeconds-22);
-
-    const fits = tables.filter(t=>t.seats>=size).sort((a,b)=>(a.seats-b.seats));
-    const tableId = fits.length ? U.pick(fits).id : null;
-
-    const noShowBase = DATA.resBaseNoShow - (Game.rating-3.5)*0.015;
-    const noShow = Math.random() < U.clamp(noShowBase + (vip?0.01:0), 0.03, 0.22);
-
-    res.push({ id:"R"+U.uid(), at, size, vip, tableId, status:"SCHEDULED", noShow, spawned:false });
+  function stop(S, toast){
+    S.running=false;
+    S.paused=false;
+    S.mode="BUILD";
+    S.guests=[];
+    S.tickets=[];
+    S.heldTableIds=[];
+    toast("Back to Build Mode.");
   }
-  res.sort((a,b)=>a.at-b.at);
-  Game.reservations = res;
-  Game.resStats = { scheduled: res.length, seated:0, noShow:0, late:0 };
-  saveGame();
-}
-function updateHeldTables(){
-  const set = Game.resSettings || {};
-  if(!set.holdTables){ Game.heldTableIds = []; return; }
-  const hs = new Set();
-  for(const r of (Game.reservations||[])){
-    if(r.status!=="SCHEDULED" || r.spawned) continue;
-    if(!r.tableId) continue;
-    if(r.at - DATA.resHoldWindowSec <= Game.t && Game.t <= r.at + DATA.resLateGraceSec){
-      hs.add(r.tableId);
+
+  function endShift(S, toast){
+    const wage = (S.cooks?.length||0)*D.WAGES.cookPerShift + (S.waiters||0)*D.WAGES.waiterPerShift + (S.janitors||0)*D.WAGES.janitorPerShift;
+    S.cash = Math.max(0, S.cash - wage);
+    S.shift.profit = S.cash - S.shift.startCash;
+    toast(`Shift ended. Wages paid: $${wage}.`);
+    stop(S, toast);
+  }
+
+  function menuPick(S){
+    const n = (Math.random()<0.35)?2:1;
+    const picks = [];
+    for(let i=0;i<n;i++){
+      const m = S.menu[U.ri(0,S.menu.length-1)];
+      picks.push(m);
     }
-  }
-  Game.heldTableIds = Array.from(hs);
-}
-function spawnReservationsNow(){
-  for(const r of (Game.reservations||[])){
-    if(r.status!=="SCHEDULED" || r.spawned) continue;
-    if(Game.t >= r.at){
-      r.spawned = true;
-      if(r.noShow){
-        r.status = "NOSHOW";
-        Game.resStats.noShow += 1;
-        updateRating(-0.01 - (r.vip?0.02:0));
-        continue;
-      }
-      r.status = "ARRIVED";
-      spawnGuestParty({ size:r.size, isReservation:true, vip:r.vip, tableId:r.tableId, arrivalAt:r.at });
-    }
-  }
-}
-
-function spawnGuestParty(opts={}){
-  // opts: { size, isReservation, vip, tableId, arrivalAt }
-  const size = opts.size ?? (Math.random() < 0.62 ? 2 : (Math.random()<0.6 ? 1 : 3));
-  const picky = opts.vip ? (Math.random() < 0.26) : (Math.random() < 0.18);
-  const patience = U.rand(38, 80) * (picky?0.85:1.0) * (opts.vip?1.05:1.0);
-  const budget = U.rand(18, 55) * (opts.vip?1.18:1.0);
-  const id = "G"+U.uid();
-  const pref = U.pick(["Fast","Comfort","Light","Premium"]);
-  Game.guests.push({
-    id,size,picky,patience,budget,pref,
-    isReservation: !!opts.isReservation,
-    vip: !!opts.vip,
-    reservedTableId: opts.tableId ?? null,
-    _arrivedAt: opts.arrivalAt ?? Game.t,
-    state:"WAITING",
-    orderedAt:null, seatedAt:null, servedAt:null, dishId:null,
-    satisfaction:1.0,
-    note: opts.isReservation ? (opts.vip ? "VIP booking" : "Booking") : ""
-  });
-}
-function chooseDish(party, allowOut=false){
-  const pool = DATA.menu
-    .map(d=>({dish:d, price:getPrice(d), stock:stockFor(d.id)}))
-    .filter(x=> allowOut ? true : (x.stock > 0));
-  const pickFrom = pool.length ? pool : DATA.menu.map(d=>({dish:d, price:getPrice(d), stock:0}));
-
-  const weighted=[];
-  for(const {dish,price,stock} of pickFrom){
-    let w=1;
-    if(dish.tag===party.pref) w+=1.4;
-    if(price>party.budget) w-=0.3;
-    const fc = dish.cost / Math.max(1, price);
-    const value = U.clamp(0.6 - (fc - 0.32), 0.25, 1.0);
-    w += value*0.4;
-    if(stock<=2 && !allowOut) w-=0.15;
-    weighted.push([{dish,price}, Math.max(0.05,w)]);
-  }
-  let sum=0; for(const [,w] of weighted) sum+=w;
-  let r=Math.random()*sum;
-  for(const [obj,w] of weighted){ r-=w; if(r<=0) return obj.dish; }
-  return pickFrom[0].dish;
-}
-
-/* -------------------- Physical Stations -------------------- */
-function physCounts(){
-  const c = {PREP:0, COOK:0, PASS:0};
-  for(const s of Game.layout.stations){
-    if(c[s.type]!=null) c[s.type] += 1;
-  }
-  return c;
-}
-function equipCounts(){
-  const e = {WALKIN:0, DISH:0, EXTRA_COOK:0};
-  for(const x of (Game.layout.equipment||[])){
-    if(e[x.type]!=null) e[x.type] += 1;
-  }
-  return e;
-}
-function stationProfile(station){
-  const assigned = Game.cooks.filter(c=>c.assign===station);
-  const floats = Game.cooks.filter(c=>c.assign==="FLOAT");
-  const floatWeight = 0.35;
-
-  let capacityFloat=0, speedSum=0, head=0;
-  for(const c of assigned){
-    const f=cookSkillFactor(c, station);
-    capacityFloat+=f; speedSum+=f; head+=1;
-  }
-  for(const c of floats){
-    const f=cookSkillFactor(c, station)*floatWeight;
-    capacityFloat+=f; speedSum+=f; head+=floatWeight;
+    return picks;
   }
 
-  const scramble = (assigned.length===0 && floats.length===0);
-  const baseCap = scramble ? 0.75 : 0;
-  capacityFloat = Math.max(baseCap, capacityFloat);
+  function tick(S, dt, toast){
+    S.t += dt;
 
-  let staffCap = Math.max(1, Math.floor(capacityFloat + 0.5));
-  const avgSkill = (head>0) ? (speedSum/head) : (scramble ? 0.75 : 0.9);
-  let speed = U.clamp(avgSkill / 1.15, 0.65, 1.25);
-
-  // Physical cap (build mode)
-  const pc = physCounts();
-  const ec = equipCounts();
-  const phys = pc[station] || 0;
-  // Equipment bonuses
-  if(station==="COOK" && (ec.EXTRA_COOK||0)>0){
-    const b = Math.min(ec.EXTRA_COOK, 3);
-    speed *= (1 + b*0.07);
-  }
-  if(phys <= 0){
-    // no physical station: you "improvise" (slow + error-prone)
-    staffCap = 1;
-    speed *= 0.58;
-  }else{
-    staffCap = Math.min(staffCap, phys);
-    // a small boost if you have 2+ work surfaces (less congestion)
-    const boost = U.clamp(0.92 + Math.min(phys,3)*0.03, 0.92, 1.02);
-    speed *= boost;
-  }
-
-  return {capacity:staffCap, speed, phys};
-}
-
-/* -------------------- Kitchen Runtime -------------------- */
-function initStationsRuntime(){
-  Game.stationsRuntime = {};
-  for(const s of DATA.stations){
-    Game.stationsRuntime[s] = { id:s, queue:[], active:[], done:0, profile: stationProfile(s) };
-  }
-}
-function refreshStationProfiles(){
-  for(const s of DATA.stations){
-    if(!Game.stationsRuntime[s]) Game.stationsRuntime[s] = { id:s, queue:[], active:[], done:0 };
-    Game.stationsRuntime[s].profile = stationProfile(s);
-  }
-}
-function ticketQualityEstimate(ticket){
-  const wait = (Game.t - ticket.orderedAt);
-  const waitFactor = U.clamp(1 - (wait-20)/80, 0.25, 1.0);
-  const cleanFactor = U.clamp(0.7 + Game.cleanliness*0.4, 0.7, 1.1);
-  const staffFactor = U.clamp(1 - (ticket.qualityPenalty||0), 0.6, 1.0);
-  return U.clamp(ticket.baseQuality * waitFactor * cleanFactor * staffFactor, 0.2, 1.0);
-}
-function createTicket(party, dish, opts={}){
-  const emergency = !!opts.emergency;
-  const price = getPrice(dish);
-
-  if(!emergency){
-    Game.stock[dish.id] = Math.max(0, stockFor(dish.id) - 1);
-    if(stockFor(dish.id) === 0) Game.outOfStock.add(dish.id);
-  }else{
-    addCost(dish.cost * 1.25);
-    Game.stats.emergency += 1;
-  }
-
-  const steps = dish.steps.map(([station,time])=>({station, time, remaining:time, state:"QUEUED"}));
-  if(emergency) steps.unshift({station:"PREP", time:9, remaining:9, state:"QUEUED", _rush:true});
-
-  const t = {
-    id:"K"+U.uid(),
-    platesNeeded: Math.max(1, party.size||1),
-    partyId:party.id,
-    dishId:dish.id,
-    dishName:dish.name,
-    price,
-    defaultPrice:dish.price,
-    steps,
-    stepIndex:0,
-    orderedAt:Game.t,
-    finishedAt:null,
-    baseQuality:dish.baseQuality,
-    status:"QUEUED",
-    emergency,
-    qualityPenalty:0,
-    mistakes:0
-  };
-  Game.tickets.push(t);
-  enqueueNextStep(t);
-  return t;
-}
-function enqueueNextStep(ticket){
-  const idx = ticket.stepIndex;
-  if(idx >= ticket.steps.length){ ticket.status="READY"; ticket.finishedAt=Game.t; return; }
-  const step = ticket.steps[idx];
-  step.state="QUEUED";
-  Game.stationsRuntime[step.station].queue.push({ticketId:ticket.id, stepIndex:idx});
-  ticket.status="COOKING";
-}
-function computeMistakeChance(stationId){
-  const st = Game.stationsRuntime[stationId];
-  const prof = st.profile;
-  const load = st.queue.length + st.active.length;
-  const cap = Math.max(1, prof.capacity);
-  const overload = U.clamp((load - cap) / (cap*2.5), 0, 1);
-
-  const assigned = Game.cooks.filter(c=>c.assign===stationId || c.assign==="FLOAT");
-  const avgFat = assigned.length ? (assigned.reduce((s,c)=>s+c.fatigue,0)/assigned.length) : 0.2;
-  const skillBad = U.clamp(1.05 - prof.speed, 0, 0.6);
-
-  let p = DATA.baseMistakeChance
-        + overload * DATA.overloadMistakeBoost
-        + avgFat * 0.05
-        + skillBad * 0.05;
-
-  if(prof.phys <= 0) p += 0.06;  // missing physical station
-  if(Game._disruptionUntil && Game.t < Game._disruptionUntil) p += 0.03;
-  return U.clamp(p, 0.01, 0.26);
-}
-function processStations(dt){
-  refreshStationProfiles();
-
-  for(const sid of DATA.stations){
-    const st = Game.stationsRuntime[sid];
-    const {capacity, speed} = st.profile;
-
-    while(st.active.length < capacity && st.queue.length>0){
-      const task = st.queue.shift();
-      st.active.push({ ticketId:task.ticketId, stepIndex:task.stepIndex });
-      const ticket = Game.tickets.find(t=>t.id===task.ticketId);
-      if(ticket) ticket.steps[task.stepIndex].state="ACTIVE";
+    S.shift.left -= dt;
+    S.shift.profit = S.cash - S.shift.startCash;
+    if(S.shift.left <= 0){
+      endShift(S, toast);
+      return;
     }
 
-    const mistakeChance = computeMistakeChance(sid);
-
-    for(let i=st.active.length-1;i>=0;i--){
-      const a = st.active[i];
-      const ticket = Game.tickets.find(t=>t.id===a.ticketId);
-      if(!ticket){ st.active.splice(i,1); continue; }
-      const step = ticket.steps[a.stepIndex];
-      if(!step){ st.active.splice(i,1); continue; }
-
-      const rushSlow = step._rush ? 0.85 : 1.0;
-      const disruptionSlow = (Game._disruptionUntil && Game.t < Game._disruptionUntil) ? 0.85 : 1.0;
-      const globalSpeed = U.clamp(1.0 + (Game.cleanliness-0.85)*0.6, 0.75, 1.15);
-
-      step.remaining -= dt * globalSpeed * speed * rushSlow * disruptionSlow;
-
-      if(step.remaining <= 0){
-        if(Math.random() < mistakeChance){
-          ticket.mistakes += 1;
-          Game.stats.mistakes += 1;
-          ticket.qualityPenalty = U.clamp((ticket.qualityPenalty||0) + DATA.mistakeQualityPenalty, 0, 0.35);
-
-          const penalty = DATA.mistakeTimePenalty * (sid==="COOK" ? 1.2 : 1.0);
-          if(ticket.stepIndex < ticket.steps.length - 1){
-            ticket.steps[ticket.stepIndex+1].time += penalty;
-            ticket.steps[ticket.stepIndex+1].remaining += penalty;
-          }else{
-            step.remaining += penalty; step.time += penalty; step.state="ACTIVE";
-            continue;
-          }
+    S.heldTableIds = [];
+    if(S.resSettings.holdTables){
+      for(const r of S.reservations){
+        if(r.status!=="BOOKED") continue;
+        if(r.timeMin - S.t < 10 && r.timeMin - S.t > -5){
+          const t = availableTableFor(S, r.size, true);
+          if(t) S.heldTableIds.push(t.id);
         }
-
-        step.state="DONE";
-        st.done += 1;
-        st.active.splice(i,1);
-        ticket.stepIndex += 1;
-        enqueueNextStep(ticket);
-      }
-    }
-  }
-
-  const activeByStation = {};
-  for(const sid of DATA.stations) activeByStation[sid] = Game.stationsRuntime[sid].active.length;
-
-  for(const c of Game.cooks){
-    const station = c.assign;
-    let work = 0;
-    if(station==="FLOAT"){
-      const totalActive = DATA.stations.reduce((s,st)=>s+(activeByStation[st]||0),0);
-      work = U.clamp(totalActive/6, 0, 1) * 0.6;
-    }else{
-      work = U.clamp((activeByStation[station]||0)/2, 0, 1);
-    }
-    c.fatigue = U.clamp(c.fatigue + dt * DATA.fatigueGainPerSec * work, 0, 1);
-  }
-}
-function finalizeReadyTickets(){
-  for(const ticket of Game.tickets){
-    if((ticket.status !== "READY" && ticket.status !== "WAIT_PLATES" && ticket.status !== "RUNNING") || ticket._served) continue;
-    const party = Game.guests.find(g=>g.id===ticket.partyId);
-    if(!party){ ticket._served=true; continue; }
-
-    // Plate gate (Stage 7): you can't send food without clean plates
-    const needPlates = Math.max(1, ticket.platesNeeded||1);
-    if(Game.platesClean < needPlates){
-      ticket.status = "WAIT_PLATES";
-      ticket._plateWait = true;
-      const waited = Game.t - (ticket.finishedAt ?? Game.t);
-      if(waited > 0) updateRating(-DATA.plateShortagePenaltyPerSec * Math.min(waited, 6));
-      continue;
-    }
-    // allocate plates now; they become dirty when the party leaves
-    Game.platesClean = U.clamp(Game.platesClean - needPlates, 0, Game.platesTotal);
-    party.platesUsed = (party.platesUsed||0) + needPlates;
-
-    // FOH run (Stage 8)
-    if(ticket.status !== "RUNNING"){
-      ticket.status = "RUNNING";
-      ticket.runDue = Game.t + fohRunDelayForParty(party);
-      party.state = "WAIT_RUN";
-      party.note = "Food is on the pass";
-      continue;
-    }
-
-    const wait = (ticket.finishedAt ?? Game.t) - ticket.orderedAt;
-    Game.stats.waitTotal += wait; Game.stats.waitCount += 1;
-
-    const quality = ticketQualityEstimate(ticket);
-    let sat = quality;
-
-    const late = wait > party.patience;
-    if(late){ sat *= 0.55; Game.stats.issues.slow += 1; }
-    if(Game.cleanliness < 0.55){ sat *= 0.78; Game.stats.issues.dirty += 1; }
-
-    // value
-    const priceIndex = ticket.price / Math.max(1, ticket.defaultPrice);
-    const overPrice = Math.max(0, priceIndex - 1);
-    const underPrice = Math.max(0, 1 - priceIndex);
-
-    let valueMult = 1.0;
-    if(overPrice > 0){
-      const amp = (party.picky ? 1.25 : 1.0) * (ticket.price > party.budget ? 1.15 : 1.0);
-      const qualityGap = U.clamp(0.9 - quality, 0, 0.7);
-      valueMult *= U.clamp(1 - overPrice * (0.22 + qualityGap*0.25) * amp, 0.70, 1.0);
-    }
-    if(underPrice > 0) valueMult *= U.clamp(1 + underPrice*0.08, 1.0, 1.10);
-
-    sat *= valueMult;
-    if(valueMult < 0.88) Game.stats.issues.value += 1;
-
-    if(ticket.mistakes >= 1) sat *= U.clamp(0.98 - ticket.mistakes*0.06, 0.75, 0.98);
-
-    const refund = sat < 0.33;
-    if(refund){
-      Game.stats.comped += 1;
-      updateRating(-0.08);
-      party.note = party.note ? (party.note + " · Comped") : "Comped";
-    }else{
-      addRevenue(ticket.price);
-      updateRating(+0.02);
-      if(valueMult < 0.88) updateRating(-0.01);
-    }
-
-    party.servedAt = Game.t;
-    party.state="EATING";
-    party.satisfaction = sat;
-    party._leaveAt = Game.t + U.rand(8,16);
-    if(Math.random() < DATA.litterChance) Game.cleanliness = U.clamp(Game.cleanliness - 0.06, 0, 1);
-
-    Game.stats.served += 1;
-    ticket._served = true;
-
-    if(sat > 0.75) updateRating(+0.02);
-    if(sat < 0.5)  updateRating(-0.03);
-  }
-  Game.tickets = Game.tickets.filter(t=>!t._served || (Game.t - (t.finishedAt ?? Game.t) < 30));
-}
-
-/* -------------------- Service Loop -------------------- */
-function startService(){
-  // disable build
-  Game.mode="SERVICE";
-  Game.building=false;
-  Game.running=true;
-  Game.paused=false;
-  Game.reportOpen=false;
-  Game.t=0;
-  Game.spawnAcc=0;
-  Game.guests=[];
-  Game.tickets=[];
-  Game.stats=freshStats();
-  Game._disruptionUntil = 0;
-
-  // plates baseline
-  if(!Game.platesTotal || Game.platesTotal < 10) Game.platesTotal = DATA.platesBase;
-  Game.platesClean = U.clamp(Math.round(Game.platesClean ?? Game.platesTotal), 0, Game.platesTotal);
-  Game.platesDirty = U.clamp(Math.round(Game.platesDirty ?? 0), 0, Game.platesTotal);
-
-  // runtime layout derived
-  rebuildRuntimeFromLayout();
-  initStationsRuntime();
-
-  applyDailyWages();
-  doPrepToPar();
-
-  toast("Service started.");
-  saveGame();
-}
-function endService(){
-  Game.running=false;
-  Game.paused=false;
-  Game.reportOpen=true;
-  Game.mode="REPORT";
-
-  endOfDaySpoilage();
-
-  const avgWait = Game.stats.waitCount ? (Game.stats.waitTotal/Game.stats.waitCount) : 0;
-  const target = ratingFromSignals(avgWait, Game.cleanliness, Game.stats.issues.value, Game.stats.outEvents, Game.stats.mistakes);
-  Game.rating = U.clamp(U.lerp(Game.rating, target, 0.55), DATA.ratingFloor, DATA.ratingCeil);
-
-  for(const c of Game.cooks){
-    c.fatigue = U.clamp(c.fatigue * (1 - DATA.fatigueRecoverOvernight), 0, 1);
-  }
-
-  saveGame();
-  toast("End of day report.");
-}
-function updateSim(dt){
-  Game.cleanliness = U.clamp(Game.cleanliness - DATA.cleanlinessDecay*dt, 0, 1);
-  if(Game.janitors>0) Game.cleanliness = U.clamp(Game.cleanliness + (0.0085*Game.janitors)*dt, 0, 1);
-  const ec = equipCounts();
-  if((ec.DISH||0)>0) Game.cleanliness = U.clamp(Game.cleanliness + (0.0065*(ec.DISH))*dt, 0, 1);
-
-  // dishpit / plates
-  processDishpit(dt);
-
-  // spawn based on table count
-  const tableCount = Game.tables.length || 1;
-  const capacityBoost = U.clamp(tableCount / 6, 0.6, 1.7);
-
-  const ratingNorm = (Game.rating - DATA.ratingFloor) / (DATA.ratingCeil - DATA.ratingFloor);
-  let spawn = (DATA.spawnBase + ratingNorm*0.18 + (Game.cleanliness-0.75)*0.12) * capacityBoost;
-  spawn = U.clamp(spawn, DATA.spawnMin, DATA.spawnMax*1.25);
-
-  Game.spawnAcc += spawn * dt;
-  while(Game.spawnAcc >= 1){
-    Game.spawnAcc -= 1;
-    const accept = !!(Game.resSettings && Game.resSettings.acceptWalkins);
-    if(accept && (canSeatParty(2,false) || canSeatParty(1,false))) spawnGuestParty({isReservation:false});
-  }
-
-  // Reservations
-  spawnReservationsNow();
-  updateHeldTables();
-
-  for(const party of Game.guests){
-    if(party.state==="WAITING"){
-      const waited = Game.t - (party._arrivedAt ?? (party._arrivedAt = Game.t));
-      if(seatParty(party)) party._orderAt = Game.t + U.rand(2.5, 6.5);
-      else if(waited > U.rand(14, 24)){
-        party.state="LEFT"; Game.stats.left += 1; updateRating(-0.03); party.note="Left (no table)";
       }
     }
 
-    if(party.state==="SEATED" && Game.t >= party._orderAt){
-      let dish = chooseDish(party, false);
-      if(stockFor(dish.id) <= 0) dish = chooseDish(party, true);
-
-      party.dishId = dish.id;
-      party.orderedAt = Game.t;
-      party.state="ORDERED";
-
-      if(stockFor(dish.id) <= 0){
-        Game.stats.outEvents += 1;
-        Game.stats.issues.out += 1;
-
-        const willEmergency = Math.random() < 0.45;
-        if(willEmergency){
-          party.note="Emergency prep";
-          createTicket(party, dish, {emergency:true});
+    for(const r of S.reservations){
+      if(r.status!=="BOOKED") continue;
+      if(S.t >= r.timeMin){
+        const noShow = Math.random() < 0.10;
+        if(noShow){
+          r.status="NO_SHOW";
+          S.resStats.noShow += 1;
+          continue;
+        }
+        const t = availableTableFor(S, r.size, true);
+        if(t){
+          r.status="SEATED";
+          S.resStats.seated += 1;
+          S.guests.push({ id:U.uid("G"), size:r.size, vip:r.isVip, tableId:t.id, phase:"SEATED", orderT:0, eatT:0 });
         }else{
-          const alt = chooseDish(party, false);
-          if(alt && stockFor(alt.id) > 0){
-            party.note="Reordered (86)";
-            updateRating(-0.02);
-            createTicket(party, alt, {emergency:false});
+          r.status="BLOWUP";
+          S.rating -= r.isVip ? 0.06 : 0.02;
+        }
+      }
+    }
+
+    const demandRate = 0.32;
+    const seatFactor = Math.max(0.8, World.counts(S).seats / 16);
+    const p = demandRate * seatFactor * dt;
+    if(S.resSettings.acceptWalkins){
+      if(Math.random() < p){
+        const size = (Math.random()<0.7)?2:4;
+        const t = availableTableFor(S, size, false);
+        if(t){
+          S.guests.push({ id:U.uid("G"), size, vip:false, tableId:t.id, phase:"SEATED", orderT:0, eatT:0 });
+        }else{
+          if(Math.random()<0.25) S.rating -= 0.01;
+        }
+      }
+    }
+
+    const fohCap = Math.max(1, S.waiters) * 2.8;
+    for(const g of S.guests){
+      if(g.phase==="SEATED"){
+        g.orderT += dt;
+        const orderDelay = 6.5 + (S.guests.length / fohCap) * 6.0;
+        if(g.orderT >= orderDelay){
+          g.phase="ORDERED";
+          const items = menuPick(S);
+          S.tickets.push({
+            id: U.uid("T"),
+            tableId: g.tableId,
+            vip: g.vip,
+            created: S.t,
+            items: items.map(m=>m.id),
+            stage:"PREP",
+            p:0
+          });
+        }
+      }
+    }
+
+    const outSet = new Set();
+    for(const m of S.menu){
+      const key = m.invKey;
+      if(S.inv[key] <= 0) outSet.add(m.name);
+    }
+    S.board86 = Array.from(outSet);
+
+    const c = World.counts(S);
+    const staffPrep = Staff.stationStaffProfile(S,"PREP");
+    const staffCook = Staff.stationStaffProfile(S,"COOK");
+    const staffPass = Staff.stationStaffProfile(S,"PASS");
+
+    const prepWorkers = Math.max(1, Math.min(c.PREP, staffPrep.capacity));
+    const cookWorkers = Math.max(1, Math.min(c.COOK + c.EXTRA_COOK, staffCook.capacity));
+    const passWorkers = Math.max(1, Math.min(c.PASS, staffPass.capacity));
+
+    const prepCap = prepWorkers * staffPrep.speed * 0.9;
+    const cookCap = cookWorkers * staffCook.speed * 0.9;
+    const passCap = passWorkers * staffPass.speed * 1.1;
+
+    const qPrep = S.tickets.filter(t=>t.stage==="PREP").length;
+    const qCook = S.tickets.filter(t=>t.stage==="COOK").length;
+    const qPass = S.tickets.filter(t=>t.stage==="PASS").length;
+
+    for(const t of S.tickets){
+      const items = t.items.map(id=>S.menu.find(m=>m.id===id)).filter(Boolean);
+      const prepNeed = items.reduce((a,m)=>a+m.prep,0);
+      const cookNeed = items.reduce((a,m)=>a+m.cook,0);
+      const passNeed = items.reduce((a,m)=>a+m.pass,0);
+
+      if(t.stage==="PREP"){
+        t.p += (dt / (prepNeed*6.0)) * prepCap;
+        if(t.p >= 1){ t.stage="COOK"; t.p=0; }
+      }else if(t.stage==="COOK"){
+        t.p += (dt / (cookNeed*6.5)) * cookCap;
+        if(t.p >= 1){ t.stage="PASS"; t.p=0; }
+      }else if(t.stage==="PASS"){
+        t.p += (dt / (passNeed*5.0)) * passCap;
+        if(t.p >= 1){ t.stage="DONE"; t.p=1; }
+      }
+    }
+
+    for(const g of S.guests){
+      if(g.phase==="ORDERED"){
+        const ticket = S.tickets.find(t=>t.tableId===g.tableId && t.stage==="DONE");
+        if(ticket){
+          const platesNeed = Math.max(1, Math.ceil(g.size/2));
+          if(S.platesClean >= platesNeed){
+            S.platesClean -= platesNeed;
+            S.platesDirty += platesNeed;
+
+            let rev=0, cost=0;
+            for(const id of ticket.items){
+              const m = S.menu.find(x=>x.id===id);
+              if(!m) continue;
+              if(S.inv[m.invKey] <= 0){
+                S.rating -= 0.02;
+                continue;
+              }
+              S.inv[m.invKey] -= 1;
+              rev += m.price;
+              cost += m.cost;
+            }
+            S.cash += Math.max(0, rev - cost);
+
+            g.phase="EATING";
+            g.eatT = 0;
+
+            const ti = S.tickets.indexOf(ticket);
+            if(ti>=0) S.tickets.splice(ti,1);
           }else{
-            party.state="LEFT"; Game.stats.left += 1; updateRating(-0.06);
-            party.note="Left (too many 86)";
-            if(party.tableId) clearTable(party.tableId);
+            if(Math.random()<0.15) S.rating -= 0.02;
           }
         }
-      }else{
-        createTicket(party, dish, {emergency:false});
+      }else if(g.phase==="EATING"){
+        g.eatT += dt;
+        const eatTime = 14 + U.r(0,6);
+        if(g.eatT >= eatTime) g.phase="LEFT";
       }
     }
+    S.guests = S.guests.filter(g=>g.phase!=="LEFT");
 
-    if(party.state==="ORDERED"){
-      const waited = Game.t - party.orderedAt;
-      if(waited > party.patience*1.35){
-        party.state="LEFT";
-        Game.stats.left += 1;
-        updateRating(-0.07);
-        party.note = party.note || "Left (waited too long)";
-        if(party.tableId) clearTable(party.tableId);
-      }
+    const dishwash = Math.max(0, c.DISH);
+    const washRate = 0.35 + dishwash * 0.45;
+    const washed = Math.min(S.platesDirty, washRate * dt);
+    S.platesDirty -= washed;
+    S.platesClean = Math.min(S.platesTotal, S.platesClean + washed);
+
+    const dirtyRatio = S.platesDirty / Math.max(1,S.platesTotal);
+    S.cleanliness -= dirtyRatio * 0.0025 * dt;
+    S.cleanliness += (S.janitors*0.0010) * dt;
+    S.cleanliness = U.clamp(S.cleanliness, 0.2, 1.0);
+
+    const waitPressure = (S.guests.length / Math.max(1, fohCap));
+    S.rating -= waitPressure * 0.0009 * dt;
+    S.rating += 0.00025 * dt;
+    S.rating = U.clamp(S.rating, 1.0, 5.0);
+
+    const dishScore = (dirtyRatio*2.2);
+    const fohScore = waitPressure;
+    const prepScore = (qPrep / Math.max(1, prepCap*3));
+    const cookScore = (qCook / Math.max(1, cookCap*3));
+    const passScore = (qPass / Math.max(1, passCap*3));
+    const arr = [
+      {name:"FOH", score:fohScore},
+      {name:"DISH PIT", score:dishScore},
+      {name:"PREP", score:prepScore},
+      {name:"COOK", score:cookScore},
+      {name:"PASS", score:passScore},
+    ].sort((a,b)=>b.score-a.score);
+    S.lastWorst = arr[0] || {name:"—", score:0};
+  }
+
+  return { start, stop, tick };
+});
+
+
+// -------------------- actors (tiny moving sprites) --------------------
+RT.define("actors", ["util","world"], (U, World) => {
+  const ROLE = { COOK:"COOK", WAITER:"WAITER", JANITOR:"JANITOR", GUEST:"GUEST" };
+
+  function spawnStaff(S){
+    const K = S.layout.kitchenRect;
+    const D = S.layout.diningRect;
+    const entry = S.layout.entry;
+
+    S.actors = (S.actors||[]).filter(a=>a.role===ROLE.GUEST);
+
+    // cooks (hang around kitchen stations)
+    for(let i=0;i<(S.cooks?.length||0);i++){
+      const a = {
+        id: U.uid("A"), role: ROLE.COOK, name: (S.cooks[i].name||"Cook"),
+        x: U.r(K.x+40, K.x+K.w-40), y: U.r(K.y+30, K.y+K.h-30),
+        tx: 0, ty: 0, speed: U.r(52, 68),
+        mood: "focused", t: 0
+      };
+      S.actors.push(a);
     }
 
-    if(party.state==="EATING" && Game.t >= party._leaveAt){
-      party.state="DONE";
-      const used = Math.round(party.platesUsed||0);
-      if(used>0){
-        Game.platesDirty = U.clamp(Game.platesDirty + used, 0, Game.platesTotal);
-        party.platesUsed = 0;
-      }
-      if(party.tableId) clearTable(party.tableId);
+    // waiters (bounce between kitchen pass and tables)
+    for(let i=0;i<(S.waiters||0);i++){
+      const a = {
+        id: U.uid("A"), role: ROLE.WAITER, name: "Waiter",
+        x: entry.x-30, y: entry.y+U.r(-20,20),
+        tx: 0, ty: 0, speed: U.r(86, 106),
+        carrying: null, t: 0
+      };
+      S.actors.push(a);
+    }
+
+    // janitors (patrol dining)
+    for(let i=0;i<(S.janitors||0);i++){
+      const a = {
+        id: U.uid("A"), role: ROLE.JANITOR, name: "Janitor",
+        x: D.x+U.r(40, D.w-40), y: D.y+U.r(40, D.h-40),
+        tx: 0, ty: 0, speed: U.r(70, 90),
+        t: 0
+      };
+      S.actors.push(a);
     }
   }
 
-  processStations(dt);
-  finalizeReadyTickets();
-
-  if(Game.t >= DATA.shiftSeconds) endService();
-}
-
-/* -------------------- Build Mode Logic -------------------- */
-function setTool(t){
-  Game.tool = t;
-  document.querySelectorAll(".toolBtn").forEach(b=>{
-    b.classList.toggle("active", b.getAttribute("data-tool")===t);
-  });
-}
-function insideRect(x,y,r){ return x>=r.x && y>=r.y && x<=r.x+r.w && y<=r.y+r.h; }
-function clampToRect(item, kind){
-  const r = (kind==="table") ? Game.layout.diningRect : Game.layout.kitchenRect;
-  const w = (kind==="table") ? 90 : (kind==="station" ? 110 : 100);
-  const h = (kind==="table") ? 60 : 60;
-  item.x = U.clamp(item.x, r.x+6, r.x + r.w - w - 6);
-  item.y = U.clamp(item.y, r.y+6, r.y + r.h - h - 6);
-}
-function pickItemAt(x,y){
-  // equipment top priority
-  for(let i=(Game.layout.equipment||[]).length-1;i>=0;i--){
-    const e = Game.layout.equipment[i];
-    const w=110, h=60;
-    if(x>=e.x && y>=e.y && x<=e.x+w && y<=e.y+h) return {kind:"equip", id:e.id};
-  }
-  // stations top priority
-  for(let i=Game.layout.stations.length-1;i>=0;i--){
-    const s = Game.layout.stations[i];
-    const w=120, h=70;
-    if(x>=s.x && y>=s.y && x<=s.x+w && y<=s.y+h) return {kind:"station", id:s.id};
-  }
-  for(let i=Game.layout.tables.length-1;i>=0;i--){
-    const t = Game.layout.tables[i];
-    const w=90, h=60;
-    if(x>=t.x && y>=t.y && x<=t.x+w && y<=t.y+h) return {kind:"table", id:t.id};
-  }
-  return null;
-}
-function getSelectedObj(){
-  if(!Game.selected) return null;
-  if(Game.selected.kind==="table") return Game.layout.tables.find(t=>t.id===Game.selected.id);
-  if(Game.selected.kind==="station") return Game.layout.stations.find(s=>s.id===Game.selected.id);
-  if(Game.selected.kind==="equip") return (Game.layout.equipment||[]).find(e=>e.id===Game.selected.id);
-  return null;
-}
-function selectItem(sel){
-  Game.selected = sel;
-  const obj = getSelectedObj();
-  const propBox = document.getElementById("propBox");
-  const btnDelete = document.getElementById("btnDelete");
-
-  if(!obj){
-    propBox.style.display="none";
-    btnDelete.disabled = true;
-    return;
-  }
-  propBox.style.display="";
-  btnDelete.disabled = false;
-
-  if(sel.kind==="table"){
-    document.getElementById("propTitle").textContent = "Table "+obj.id;
-    document.getElementById("propSub").textContent = "Dining";
-    document.getElementById("propPill").textContent = obj.seats+" seats";
-    document.getElementById("tableProps").style.display="";
-    document.getElementById("stationProps").style.display="none";
-    document.getElementById("inpSeats").value = String(obj.seats);
-  }else if(sel.kind==="station"){
-    document.getElementById("propTitle").textContent = "Station "+obj.id;
-    document.getElementById("propSub").textContent = "Kitchen";
-    document.getElementById("propPill").textContent = obj.type;
-    document.getElementById("stationTypePill").textContent = obj.type;
-    document.getElementById("tableProps").style.display="none";
-    document.getElementById("stationProps").style.display="";
-  }else{
-    // equipment
-    document.getElementById("propTitle").textContent = "Equipment "+obj.id;
-    document.getElementById("propSub").textContent = "Kitchen";
-    document.getElementById("propPill").textContent = obj.type;
-    document.getElementById("stationTypePill").textContent = obj.type;
-    document.getElementById("tableProps").style.display="none";
-    document.getElementById("stationProps").style.display="";
-  }
-}
-function addTableAt(x,y){
-  const cost = DATA.costTable;
-  if(Game.cash < cost){ toast("Not enough cash for a table."); return false; }
-  if(!insideRect(x,y,Game.layout.diningRect)){ toast("Tables must be placed in dining."); return false; }
-  Game.cash -= cost;
-  const id = "T"+(Game.layout.tables.length+1);
-  const t = {id, x:x-45, y:y-30, seats:2};
-  clampToRect(t, "table");
-  Game.layout.tables.push(t);
-  saveGame();
-  toast("Table added.");
-  return true;
-}
-function addStationAt(type, x,y){
-  const cost = (type==="PREP") ? DATA.costPrep : (type==="COOK" ? DATA.costCook : DATA.costPass);
-  if(Game.cash < cost){ toast("Not enough cash for that station."); return false; }
-  if(!insideRect(x,y,Game.layout.kitchenRect)){ toast("Stations must be placed in kitchen."); return false; }
-  Game.cash -= cost;
-  const prefix = type==="PREP" ? "P" : (type==="COOK" ? "C" : "X");
-  const n = Game.layout.stations.filter(s=>s.type===type).length + 1;
-  const id = prefix + n;
-  const s = {id, type, x:x-60, y:y-35};
-  clampToRect(s, "station");
-  Game.layout.stations.push(s);
-  saveGame();
-  toast(type+" station added.");
-  return true;
-
-function addEquipmentAt(type, x,y){
-  let cost = (type==="WALKIN") ? DATA.costWalkIn : (type==="DISH" ? DATA.costDish : DATA.costExtraCook);
-  if(Game.cash < cost){ toast("Not enough cash for that equipment."); return false; }
-  if(!insideRect(x,y,Game.layout.kitchenRect)){ toast("Equipment must be placed in kitchen."); return false; }
-  Game.cash -= cost;
-  const prefix = (type==="WALKIN") ? "W" : (type==="DISH" ? "D" : "E");
-  const n = (Game.layout.equipment||[]).filter(e=>e.type===type).length + 1;
-  const id = prefix + n;
-  const e = {id, type, x:x-50, y:y-30};
-  clampToRect(e, "equip");
-  if(!Game.layout.equipment) Game.layout.equipment = [];
-  Game.layout.equipment.push(e);
-  saveGame();
-  toast(type==="EXTRA_COOK" ? "Extra cooktop added." : (type==="DISH" ? "Dishwasher added." : "Walk-in added."));
-  return true;
-}
-
-}
-function deleteSelected(){
-  if(!Game.selected) return;
-  if(Game.selected.kind==="table"){
-    const idx = Game.layout.tables.findIndex(t=>t.id===Game.selected.id);
-    if(idx>=0) Game.layout.tables.splice(idx,1);
-  }else if(Game.selected.kind==="station"){
-    const idx = Game.layout.stations.findIndex(s=>s.id===Game.selected.id);
-    if(idx>=0) Game.layout.stations.splice(idx,1);
-  }else{
-    const idx = (Game.layout.equipment||[]).findIndex(e=>e.id===Game.selected.id);
-    if(idx>=0) Game.layout.equipment.splice(idx,1);
-  }
-  Game.selected = null;
-  selectItem(null);
-  saveGame();
-  toast("Deleted.");
-}
-function expandFloor(){
-  const lvl = Game.layout.expand.floorLevel || 0;
-  const cost = Math.round(DATA.expandFloorBase * Math.pow(DATA.expandMult, lvl));
-  if(Game.cash < cost){ toast("Not enough cash to expand floor."); return; }
-  Game.cash -= cost;
-  Game.layout.expand.floorLevel = lvl + 1;
-
-  // widen both dining + kitchen
-  Game.layout.diningRect.w += 80;
-  Game.layout.kitchenRect.w += 80;
-  Game.layout.entry.x += 80;
-
-  // clamp all items
-  for(const t of Game.layout.tables) clampToRect(t,"table");
-  for(const s of Game.layout.stations) clampToRect(s,"station");
-
-  saveGame();
-  toast("Floor expanded.");
-}
-function expandKitchen(){
-  const lvl = Game.layout.expand.kitchenLevel || 0;
-  const cost = Math.round(DATA.expandKitchenBase * Math.pow(DATA.expandMult, lvl));
-  if(Game.cash < cost){ toast("Not enough cash to expand kitchen."); return; }
-  Game.cash -= cost;
-  Game.layout.expand.kitchenLevel = lvl + 1;
-
-  Game.layout.kitchenRect.h += 60;
-  saveGame();
-  toast("Kitchen expanded.");
-}
-
-/* -------------------- UI: Staff -------------------- */
-function buildStaffUI(){
-  const el = document.getElementById("staffList");
-  el.innerHTML = "";
-  const cov = stationCoverage();
-  const pc = physCounts();
-  const ec = equipCounts();
-  document.getElementById("staffPill").textContent = `Cooks ${Game.cooks.length} · Waiters ${Game.waiters||0} · Phys PREP ${pc.PREP} COOK ${pc.COOK} PASS ${pc.PASS} · Equip W ${ec.WALKIN} D ${ec.DISH} E ${ec.EXTRA_COOK}`;
-
-  for(const c of Game.cooks){
-    const sp=pct(c.skills.PREP), sc=pct(c.skills.COOK), sa=pct(c.skills.PASS), fat=pct(c.fatigue);
-    el.insertAdjacentHTML("beforeend", `
-      <div class="staff" data-id="${c.id}">
-        <div class="staffTop">
-          <div>
-            <b>${c.name}</b>
-            <div class="small">Wage $${c.wage}/day · Fatigue ${fat}%</div>
-            <div class="small">Skills: PREP ${sp}% · COOK ${sc}% · PASS ${sa}%</div>
-          </div>
-          <div>
-            <select data-act="assign">
-              <option value="PREP" ${c.assign==="PREP"?"selected":""}>PREP</option>
-              <option value="COOK" ${c.assign==="COOK"?"selected":""}>COOK</option>
-              <option value="PASS" ${c.assign==="PASS"?"selected":""}>PASS</option>
-              <option value="FLOAT" ${c.assign==="FLOAT"?"selected":""}>FLOAT</option>
-            </select>
-          </div>
-        </div>
-      </div>
-    `);
-  }
-  el.querySelectorAll(".staff").forEach(node=>{
-    const id=node.getAttribute("data-id");
-    node.querySelector('[data-act="assign"]').addEventListener("change", (e)=>{
-      changeAssignment(id, e.target.value);
-      buildStaffUI();
-    });
-  });
-}
-
-/* -------------------- UI: Tickets -------------------- */
-function updateTicketsUI(){
-  const box = document.getElementById("tickets");
-  const live = Game.tickets.filter(t=>!t._served).slice(0,12);
-  box.innerHTML = live.length ? "" : `<div class="small">No tickets yet.</div>`;
-
-  for(const t of live){
-    const waited = Game.t - t.orderedAt;
-    const prog = U.clamp((t.stepIndex) / (t.steps.length || 1), 0, 1);
-    const q = ticketQualityEstimate(t);
-
-    const warn = (waited>40 || q<0.55 || t.mistakes>0 || t.emergency || t.status==="WAIT_PLATES") ? " style='border-color:#7a2d33;'" : "";
-    box.insertAdjacentHTML("beforeend", `
-      <div class="ticket"${warn}>
-        <div class="top">
-          <div><b>${t.dishName}</b><div class="small">Ticket ${t.id} · $${Math.round(t.price)}</div></div>
-          <div style="text-align:right">
-            <div class="small">Wait ${Math.round(waited)}s</div>
-            <div class="small">Quality ${(q*100).toFixed(0)}%</div>
-          </div>
-        </div>
-        <div class="bar"><div style="width:${(prog*100).toFixed(0)}%"></div></div>
-        <div class="small" style="margin-top:6px;">
-          Step ${Math.min(t.stepIndex+1, t.steps.length)}/${t.steps.length}
-          — ${t.stepIndex < t.steps.length ? t.steps[t.stepIndex].station : "DONE"}
-          · Mistakes ${t.mistakes}
-          ${t.emergency ? " · emergency" : ""}
-        </div>
-      </div>
-    `);
+  function guestActorFor(S, guestId){
+    return (S.actors||[]).find(a=>a.role===ROLE.GUEST && a.guestId===guestId) || null;
   }
 
-  const outIds = Array.from(Game.outOfStock.values());
-  const names = outIds.map(id=>dishById(id)?.name || id);
-  document.getElementById("board86").textContent = names.length ? names.join(", ") : "None";
-}
+  function spawnGuestActor(S, g){
+    const entry = S.layout.entry;
+    const a = {
+      id: U.uid("A"),
+      role: ROLE.GUEST,
+      guestId: g.id,
+      x: entry.x+U.r(-8,8),
+      y: entry.y+U.r(-8,8),
+      tx: entry.x, ty: entry.y,
+      speed: U.r(58, 76),
+      size: g.size || 2,
+      vip: !!g.vip,
+      t: 0
+    };
+    (S.actors||[]).push(a);
+    return a;
+  }
 
-/* -------------------- UI: Global -------------------- */
-function updateBuildUI(){
-  const buildCard = document.getElementById("buildCard");
-  buildCard.style.display = (Game.mode==="BUILD") ? "" : "none";
-
-  const btnBuild = document.getElementById("btnBuildToggle");
-  btnBuild.textContent = (Game.mode==="BUILD") ? "Exit Build" : "Enter Build";
-
-  document.getElementById("modePill").textContent = Game.mode==="BUILD" ? "Build" : (Game.mode==="SERVICE" ? "Service" : "Report");
-  document.getElementById("buildPill").textContent = Game.mode==="BUILD" ? "Editing" : "Locked";
-
-  // expansion cost hints
-  const fl = Game.layout.expand.floorLevel || 0;
-  const kl = Game.layout.expand.kitchenLevel || 0;
-  const fcost = Math.round(DATA.expandFloorBase * Math.pow(DATA.expandMult, fl));
-  const kcost = Math.round(DATA.expandKitchenBase * Math.pow(DATA.expandMult, kl));
-  document.getElementById("btnExpandFloor").textContent = `Expand Floor +80w (${U.fmtMoney(fcost)})`;
-  document.getElementById("btnExpandKitchen").textContent = `Expand Kitchen +60h (${U.fmtMoney(kcost)})`;
-
-  // Start service requires at least 1 table + 1 cook station + 1 pass + 1 prep (physically)
-  const pc = physCounts();
-  const ok = (Game.layout.tables.length >= 1) && (pc.COOK>=1) && (pc.PASS>=1) && (pc.PREP>=1);
-  document.getElementById("btnStart").disabled = !(Game.mode!=="SERVICE" && ok);
-}
-function updateUI(){
-  document.getElementById("cash").textContent = U.fmtMoney(Game.cash);
-  document.getElementById("rating").textContent = U.star(Game.rating);
-  document.getElementById("dayPill").textContent = String(Game.day);
-  document.getElementById("speedText").textContent = Game.speedList[Game.speedIdx]+"×";
-
-  const profit = Game.stats ? (Game.stats.revenue - Game.stats.costs - Game.stats.wages) : 0;
-  document.getElementById("profitToday").textContent = U.fmtMoney(profit);
-
-  const remain = Math.max(0, DATA.shiftSeconds - Game.t);
-  const mm = String(Math.floor(remain/60)).padStart(2,"0");
-  const ss = String(Math.floor(remain%60)).padStart(2,"0");
-  document.getElementById("shiftTime").textContent = `${mm}:${ss}`;
-
-  document.getElementById("btnPause").disabled = !(Game.mode==="SERVICE");
-  document.getElementById("btnPause").textContent = Game.paused ? "Resume" : "Pause";
-  document.getElementById("ticketCount").textContent = String(Game.tickets.filter(t=>!t._served).length);
-
-  const pc = physCounts();
-  const ec = equipCounts();
-  document.getElementById("physPill").textContent = `Tables ${Game.layout.tables.length} · Phys PREP ${pc.PREP} COOK ${pc.COOK} PASS ${pc.PASS} · Equip W ${ec.WALKIN} D ${ec.DISH} E ${ec.EXTRA_COOK}`;
-
-  // Dishpit UI (Stage 9)
-  const rate = washRatePerSec();
-  document.getElementById("dishText").textContent =
-    `Plates ${Math.floor(Game.platesClean)}/${Game.platesTotal} · Dirty ${Math.floor(Game.platesDirty)} · Wash ${(rate*60).toFixed(0)}/min`;
-
-  // Bottleneck detection
-  let worst = {name:"—", score:0};
-  if(Game.mode==="SERVICE"){
-    for(const sid of DATA.stations){
-      const st = Game.stationsRuntime[sid];
-      const prof = st.profile || {capacity:1};
-      const cap = Math.max(1, prof.capacity||1);
-      const score = (st.queue.length + st.active.length) / cap;
-      if(score > worst.score) worst = {name:sid, score};
+  function nearest(obj, arr){
+    if(!arr || !arr.length) return null;
+    let best=null, bd=1e9;
+    for(const a of arr){
+      const dx=a.x-obj.x, dy=a.y-obj.y;
+      const d=dx*dx+dy*dy;
+      if(d<bd){ bd=d; best=a; }
     }
-    // FOH load (Stage 8)
-    const seated = Game.guests.filter(g=>g.state==="SEATED" || g.state==="ORDERED" || g.state==="EATING" || g.state==="WAIT_RUN" || g.state==="READY_ORDER").length;
-    const fohCap = Math.max(1, (Game.waiters||0) * 3.2);
-    const fohScore = seated / fohCap;
-    if(fohScore > worst.score) worst = {name:"FOH", score:fohScore};
-
-    const plateScore = (Game.platesClean <= 2) ? (3.5 + (Game.platesDirty/Game.platesTotal)*2) : 0;
-    if(plateScore > worst.score) worst = {name:"DISH PIT", score:plateScore};
+    return best;
   }
-  document.getElementById("bottlePill").textContent =
-    (worst.name==="—") ? "Bottleneck: —" : `Bottleneck: ${worst.name} (${worst.score.toFixed(1)}×)`;
 
-  // Reservations UI list (Stage 9)
-  if(document.getElementById("resList")){
-    const rs = (Game.reservations||[]);
-    const upcoming = rs.filter(r=> (r.status==="SCHEDULED" || r.status==="ARRIVED") && (r.at >= Game.t-2)).slice(0,6);
-    document.getElementById("resPill").textContent =
-      `Today ${Game.resStats.scheduled||0} · Seated ${Game.resStats.seated||0} · No-show ${Game.resStats.noShow||0} · Held ${(Game.heldTableIds||[]).length}`;
-
-    const el = document.getElementById("resList");
-    el.innerHTML = "";
-    if(!upcoming.length){
-      el.innerHTML = `<div class="small" style="opacity:0.85;">No upcoming bookings.</div>`;
-    }else{
-      for(const r of upcoming){
-        const tag = r.vip ? "VIP" : "RES";
-        const st  = r.status;
-        el.insertAdjacentHTML("beforeend", `
-          <div class="ticket">
-            <div class="row" style="justify-content:space-between;">
-              <b>${timeTag(r.at)} · ${tag} party ${r.size}</b>
-              <span class="pill">${st}</span>
-            </div>
-            <div class="small">Table ${r.tableId||"—"} ${r.noShow && r.status==="SCHEDULED" ? "· (risk no-show)" : ""}</div>
-          </div>
-        `);
-      }
+  function passPoint(S){
+    // choose PASS station location if any; else middle of kitchen
+    const pass = (S.layout.stations||[]).filter(s=>s.type==="PASS");
+    if(pass.length){
+      const p = pass[Math.floor(Math.random()*pass.length)];
+      return {x:p.x, y:p.y};
     }
+    const K=S.layout.kitchenRect;
+    return {x:K.x+K.w*0.55, y:K.y+K.h*0.35};
   }
-  syncResUIToState();
 
-  updateBuildUI();
-  updateTicketsUI();
-}
+  function pickTablePoint(S, tableId){
+    const t = (S.layout.tables||[]).find(x=>x.id===tableId);
+    if(!t) return null;
+    return {x: t.x + U.r(-10,10), y: t.y + U.r(-12,12)};
+  }
 
-/* -------------------- Save / Load (migration friendly) -------------------- */
-function saveGame(){
-  const save = {
-    v:5,
-    day:Game.day,
-    cash:Game.cash,
-    rating:Game.rating,
-    cleanliness:Game.cleanliness,
-    janitors:Game.janitors,
-    waiters:Game.waiters,
-    resSettings:Game.resSettings,
-    reservations:Game.reservations,
-    resStats:Game.resStats,
-    platesTotal:Game.platesTotal,
-    platesClean:Game.platesClean,
-    platesDirty:Game.platesDirty,
-    menuPrices:Game.menuPrices,
-    parPlan:Game.parPlan,
-    carryStock:Game.carryStock,
-    cooks:Game.cooks,
-    layout:Game.layout
-  };
-  localStorage.setItem("rtycoon_save_v5", JSON.stringify(save));
-  // keep v4 updated too (optional)
-  localStorage.setItem("rtycoon_save_v4", JSON.stringify(save));
-}
-function loadGame(){
-  const raw = localStorage.getItem("rtycoon_save_v5")
-          || localStorage.getItem("rtycoon_save_v4")
-          || localStorage.getItem("rtycoon_save_v3")
-          || localStorage.getItem("rtycoon_save_v2")
-          || localStorage.getItem("rtycoon_save_v1");
-  if(!raw) return false;
-  try{
-    const s = JSON.parse(raw);
-    Game.day = s.day ?? 1;
-    Game.cash = s.cash ?? 420;
-    Game.rating = s.rating ?? 3.6;
-    Game.cleanliness = s.cleanliness ?? 0.92;
-    Game.janitors = s.janitors ?? 0;
-    Game.platesTotal = s.platesTotal ?? DATA.platesBase;
-    Game.platesClean = s.platesClean ?? Game.platesTotal;
-    Game.platesDirty = s.platesDirty ?? 0;
-    Game.platesTotal = Math.max(10, Math.round(Game.platesTotal));
-    Game.platesClean = U.clamp(Math.round(Game.platesClean), 0, Game.platesTotal);
-    Game.platesDirty = U.clamp(Math.round(Game.platesDirty), 0, Game.platesTotal);
-    Game.menuPrices = s.menuPrices ?? {};
-    Game.parPlan = s.parPlan ?? {};
-    Game.carryStock = s.carryStock ?? {};
-    if(Array.isArray(s.cooks)){
-      Game.cooks = s.cooks.map(c=>({
-        id: c.id || ("C"+U.uid()),
-        name: c.name || (U.pick(NAMES)+" "+U.pick(["P.","K.","R.","S.","T."])),
-        wage: c.wage ?? Game.wageCookPerDay,
-        assign: c.assign || "COOK",
-        skills: c.skills || {PREP:0.55, COOK:0.55, PASS:0.55},
-        fatigue: U.clamp(c.fatigue ?? 0, 0, 1)
-      }));
-    }else{
-      Game.cooks = [];
-    }
+  function setTarget(a, p){
+    if(!p) return;
+    a.tx=p.x; a.ty=p.y;
+  }
 
-    // layout migration: if older saves don't have layout, use default
-    if(s.layout && s.layout.diningRect && s.layout.kitchenRect){
-      Game.layout = s.layout;
-      if(!Game.layout.expand) Game.layout.expand = {floorLevel:0,kitchenLevel:0};
-      if(!Array.isArray(Game.layout.tables)) Game.layout.tables = defaultLayout().tables;
-      if(!Array.isArray(Game.layout.stations)) Game.layout.stations = defaultLayout().stations;
-      if(!Array.isArray(Game.layout.equipment)) Game.layout.equipment = defaultLayout().equipment;
-      if(!Game.layout.entry) Game.layout.entry = defaultLayout().entry;
-    }else{
-      Game.layout = defaultLayout();
-    }
-
-    return true;
-  }catch{
+  function stepTowards(a, dt){
+    const dx=a.tx-a.x, dy=a.ty-a.y;
+    const d = Math.hypot(dx,dy);
+    if(d<1.5) return true;
+    const v = (a.speed||80) * dt;
+    const s = Math.min(1, v / Math.max(0.001,d));
+    a.x += dx*s; a.y += dy*s;
     return false;
   }
-}
-function resetAll(){
-  ["rtycoon_save_v5","rtycoon_save_v4","rtycoon_save_v3","rtycoon_save_v2","rtycoon_save_v1"].forEach(k=>localStorage.removeItem(k));
-  Object.assign(Game, {
-    mode:"BUILD", building:true, running:false, paused:false, speedIdx:0,
-    day:1, t:0, cash:420, rating:3.6, cleanliness:0.92, janitors:0,
-    waiters: 2,
-    resSettings: { pct:55, vipPct:6, overbookPct:10, acceptWalkins:true, holdTables:true },
-    reservations: [], heldTableIds: [], resStats: { scheduled:0, seated:0, noShow:0, late:0 },
-    platesTotal: DATA.platesBase, platesClean: DATA.platesBase, platesDirty: 0,
-    menuPrices:{}, parPlan:{}, carryStock:{}, stock:{}, outOfStock:new Set(),
-    guests:[], tickets:[], stationsRuntime:{}, stats:freshStats(), spawnAcc:0, reportOpen:false,
-    layout: defaultLayout(),
-    tool:"select", selected:null, drag:null
-  });
-  Game.cooks = [];
-  ensureDefaultCooks();
-  rebuildRuntimeFromLayout();
-  initStationsRuntime();
-  buildStaffUI();
-  selectItem(null);
-  toast("Reset complete.");
-}
 
-/* -------------------- Canvas Rendering -------------------- */
-const canvas = document.getElementById("c");
-const ctx = canvas.getContext("2d");
-let DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-
-function resizeCanvas(){
-  const rect = canvas.getBoundingClientRect();
-  const w = Math.floor(rect.width * DPR);
-  const h = Math.floor(rect.height * DPR);
-  if(canvas.width !== w || canvas.height !== h){ canvas.width = w; canvas.height = h; }
-}
-window.addEventListener("resize", ()=>{ DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1)); resizeCanvas(); });
-
-function draw(){
-  resizeCanvas();
-  const w=canvas.width, h=canvas.height;
-  ctx.clearRect(0,0,w,h);
-
-  // grid
-  ctx.save();
-  ctx.globalAlpha = 0.35;
-  ctx.strokeStyle = "rgba(123,220,255,0.10)";
-  ctx.lineWidth = 1;
-  const step = 28*DPR;
-  for(let x=0;x<w;x+=step){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
-  for(let y=0;y<h;y+=step){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
-  ctx.restore();
-
-  const s=DPR;
-  const L=Game.layout;
-
-  function rect(r, fill, stroke){
-    ctx.fillStyle=fill; ctx.strokeStyle=stroke; ctx.lineWidth=2*s;
-    ctx.beginPath(); ctx.roundRect(r.x*s,r.y*s,r.w*s,r.h*s,14*s); ctx.fill(); ctx.stroke();
-  }
-  rect(L.diningRect, "rgba(27,42,77,0.35)", "rgba(123,220,255,0.18)");
-  rect(L.kitchenRect,"rgba(31,59,43,0.35)", "rgba(124,255,138,0.16)");
-
-  ctx.fillStyle="rgba(223,230,255,0.90)";
-  ctx.font=`${14*s}px system-ui`;
-  ctx.fillText("DINING", (L.diningRect.x+14)*s, (L.diningRect.y+24)*s);
-  ctx.fillText("KITCHEN", (L.kitchenRect.x+14)*s, (L.kitchenRect.y+24)*s);
-
-  // entry
-  ctx.fillStyle="rgba(123,220,255,0.18)";
-  ctx.strokeStyle="rgba(123,220,255,0.30)";
-  ctx.lineWidth=2*s;
-  ctx.beginPath(); ctx.roundRect((L.entry.x-20)*s,(L.entry.y-20)*s,160*s,70*s,14*s); ctx.fill(); ctx.stroke();
-  ctx.fillStyle="rgba(223,230,255,0.85)";
-  ctx.font=`${12*s}px system-ui`;
-  ctx.fillText("ENTRY / QUEUE", (L.entry.x-8)*s, (L.entry.y+8)*s);
-
-  // tables
-  const tablesToDraw = (Game.mode==="SERVICE") ? Game.tables : Game.layout.tables;
-  for(const t of tablesToDraw){
-    const x=t.x*s, y=t.y*s;
-    ctx.fillStyle="rgba(58,42,27,0.75)";
-    ctx.strokeStyle="rgba(255,209,102,0.25)";
-    if(Game.selected && Game.selected.kind==="table" && Game.selected.id===t.id) ctx.strokeStyle="rgba(123,220,255,0.85)";
-    ctx.lineWidth=2*s;
-    ctx.beginPath(); ctx.roundRect(x,y,90*s,60*s,10*s); ctx.fill(); ctx.stroke();
-
-    ctx.fillStyle="rgba(232,232,234,0.95)";
-    ctx.font=`${12*s}px system-ui`;
-    ctx.fillText(t.id, x+8*s, y+18*s);
-    const occ = (Game.mode==="SERVICE") ? (t.occupied||0) : 0;
-    // Held tables for upcoming reservations (Stage 9)
-    const hs = (Game.mode==="SERVICE") ? new Set(Game.heldTableIds||[]) : null;
-    const held = (hs && hs.has(t.id) && occ===0);
-    if(held){
-      ctx.strokeStyle = "rgba(255,210,91,0.85)";
-      ctx.lineWidth = 2.5*s;
-      ctx.beginPath(); ctx.roundRect(x-3*s,y-3*s,96*s,66*s,12*s); ctx.stroke();
-      ctx.fillStyle="rgba(255,210,91,0.9)";
-      ctx.font=`${10*s}px system-ui`;
-      ctx.fillText("HELD", x+52*s, y+18*s);
+  function tick(S, dt){
+    if(!S.actors) S.actors=[];
+    // ensure guest actors exist
+    for(const g of (S.guests||[])){
+      if(!guestActorFor(S,g.id)) spawnGuestActor(S,g);
     }
-    const seats = t.seats || 2;
-    for(let i=0;i<seats;i++){
-      ctx.beginPath();
-      const ox = x + (12+i*14)*s;
-      const oy = y + 42*s;
-      ctx.fillStyle = (i < occ) ? "rgba(123,220,255,0.95)" : "rgba(255,255,255,0.22)";
-      ctx.arc(ox,oy,4.2*s,0,Math.PI*2); ctx.fill();
-    }
-  }
+    // remove guest actors whose guest left
+    const live = new Set((S.guests||[]).map(g=>g.id));
+    S.actors = S.actors.filter(a=>a.role!==ROLE.GUEST || live.has(a.guestId));
 
-  // physical stations (build mode always, service too)
-  for(const stn of Game.layout.stations){
-    const x=stn.x*s, y=stn.y*s;
-    ctx.fillStyle="rgba(59,31,52,0.70)";
-    ctx.strokeStyle="rgba(255,107,107,0.22)";
-    if(Game.selected && Game.selected.kind==="station" && Game.selected.id===stn.id) ctx.strokeStyle="rgba(123,220,255,0.85)";
-    ctx.lineWidth=2*s;
-    ctx.beginPath(); ctx.roundRect(x,y,120*s,70*s,12*s); ctx.fill(); ctx.stroke();
-    ctx.fillStyle="rgba(232,232,234,0.95)";
-    ctx.font=`${12*s}px system-ui`;
-    ctx.fillText(`${stn.type}`, x+10*s, y+18*s);
-    ctx.fillStyle="rgba(223,230,255,0.75)";
-    ctx.fillText(`${stn.id}`, x+10*s, y+38*s);
+    // behavioural targets
+    const K = S.layout.kitchenRect;
+    const D = S.layout.diningRect;
+    const entry = S.layout.entry;
 
-  // kitchen equipment (Stage 6)
-  for(const eq of (Game.layout.equipment||[])){
-    const x=eq.x*s, y=eq.y*s;
-    ctx.fillStyle="rgba(30,32,66,0.72)";
-    ctx.strokeStyle="rgba(123,220,255,0.28)";
-    if(Game.selected && Game.selected.kind==="equip" && Game.selected.id===eq.id) ctx.strokeStyle="rgba(123,220,255,0.85)";
-    ctx.lineWidth=2*s;
-    ctx.beginPath(); ctx.roundRect(x,y,110*s,60*s,12*s); ctx.fill(); ctx.stroke();
-    ctx.fillStyle="rgba(232,232,234,0.95)";
-    ctx.font=`${12*s}px system-ui`;
-    const label = (eq.type==="WALKIN") ? "WALK-IN" : (eq.type==="DISH" ? "DISH" : "EXTRA COOK");
-    ctx.fillText(label, x+10*s, y+20*s);
-    ctx.fillStyle="rgba(223,230,255,0.75)";
-    ctx.fillText(eq.id, x+10*s, y+40*s);
-  }
+    for(const a of S.actors){
+      a.t = (a.t||0) + dt;
+      // occasional retarget
+      const needNew = (Math.abs(a.tx-a.x)+Math.abs(a.ty-a.y) < 3) || (Math.random()<0.01);
 
-  }
-
-  // runtime station load overlays in service
-  if(Game.mode==="SERVICE"){
-    refreshStationProfiles();
-    for(const sid of DATA.stations){
-      const st = Game.stationsRuntime[sid];
-      const prof = st.profile;
-      const pc = physCounts();
-      ctx.fillStyle="rgba(223,230,255,0.75)";
-      ctx.font=`${12*s}px system-ui`;
-      // show near kitchen header
-      const bx = (L.kitchenRect.x + 16)*s;
-      const by = (L.kitchenRect.y + 52 + (sid==="PREP"?0:(sid==="COOK"?18:36)))*s;
-      ctx.fillText(`${sid}: cap ${prof.capacity} (phys ${pc[sid]||0}) · spd ${(prof.speed*100).toFixed(0)}% · Q ${st.queue.length} W ${st.active.length}`, bx, by);
-    }
-  }
-
-  // guests
-  if(Game.mode==="SERVICE"){
-    for(const g of Game.guests){
-      if(g.state==="LEFT" || g.state==="DONE") continue;
-      let px=L.entry.x, py=L.entry.y;
-      if(g.state==="WAITING"){
-        const idx = Game.guests.filter(x=>x.state==="WAITING").indexOf(g);
-        px = L.entry.x + (idx%6)*16;
-        py = L.entry.y + 38 + Math.floor(idx/6)*16;
-      }else if(g.tableId){
-        const t = Game.tables.find(x=>x.id===g.tableId);
-        if(t){ px = t.x + 58; py = t.y + 35; }
+      if(a.role===ROLE.COOK){
+        if(needNew){
+          // drift between stations (prep/cook/pass)
+          const st = (S.layout.stations||[])[Math.floor(Math.random()*(S.layout.stations||[]).length)] || null;
+          if(st) setTarget(a, {x: st.x+U.r(-12,12), y: st.y+U.r(-10,10)});
+          else setTarget(a, {x: U.r(K.x+40, K.x+K.w-40), y: U.r(K.y+30, K.y+K.h-30)});
+        }
       }
-      ctx.beginPath();
-      ctx.fillStyle="rgba(36,49,82,0.95)";
-      ctx.arc(px*s, py*s, 7*s, 0, Math.PI*2); ctx.fill();
-      const mood = g.state==="ORDERED" ? (1 - U.clamp((Game.t - g.orderedAt)/g.patience,0,1)) : 1;
-      ctx.strokeStyle = mood > 0.6 ? "rgba(124,255,138,0.85)" : (mood>0.3 ? "rgba(255,209,102,0.85)" : "rgba(255,107,107,0.85)");
-      ctx.lineWidth=2*s; ctx.stroke();
-    }
-  }
-
-  // cleanliness meter
-  const meterX=(L.entry.x-10)*s, meterY=(L.entry.y+110)*s, meterW=320*s, meterH=18*s;
-  ctx.fillStyle="rgba(15,20,38,0.9)";
-  ctx.strokeStyle="rgba(43,51,80,0.9)";
-  ctx.lineWidth=2*s;
-  ctx.beginPath(); ctx.roundRect(meterX,meterY,meterW,meterH,999); ctx.fill(); ctx.stroke();
-  ctx.fillStyle="rgba(123,220,255,0.85)";
-  ctx.beginPath(); ctx.roundRect(meterX,meterY,meterW*Game.cleanliness,meterH,999); ctx.fill();
-  ctx.fillStyle="rgba(223,230,255,0.85)";
-  ctx.font=`${12*s}px system-ui`;
-  ctx.fillText("Cleanliness", meterX, meterY-6*s);
-
-  // build helper overlay
-  if(Game.mode==="BUILD"){
-    ctx.fillStyle="rgba(223,230,255,0.75)";
-    ctx.font=`${12*s}px system-ui`;
-    ctx.fillText(`Tool: ${Game.tool.toUpperCase()} (tap to place, drag to move)`, (L.entry.x-10)*s, (L.entry.y+170)*s);
-  }
-
-  // report overlay
-  if(Game.reportOpen){
-    ctx.fillStyle="rgba(7,8,16,0.80)";
-    ctx.fillRect(0,0,w,h);
-
-    const pad=30*s;
-    ctx.fillStyle="rgba(223,230,255,0.95)";
-    ctx.font=`${22*s}px system-ui`;
-    ctx.fillText(`End of Day ${Game.day} Report`, pad, pad+10*s);
-
-    const avgWait = Game.stats.waitCount ? (Game.stats.waitTotal/Game.stats.waitCount) : 0;
-    const profit = Game.stats.revenue - Game.stats.costs - Game.stats.wages;
-    const fc = foodCostPctToday();
-    const avgFat = Game.cooks.length ? (Game.cooks.reduce((s,c)=>s+c.fatigue,0)/Game.cooks.length) : 0;
-
-    const lines = [
-      ["Revenue", U.fmtMoney(Game.stats.revenue)],
-      ["Costs (prep+waste+emergency)", "-"+U.fmtMoney(Game.stats.costs)],
-      ["Wages", "-"+U.fmtMoney(Game.stats.wages)],
-      ["Profit", U.fmtMoney(profit)],
-      ["Food Cost %", (Game.stats.revenue>0 ? fc.toFixed(1) : "0.0")+"%"],
-      ["Served", String(Game.stats.served)],
-      ["Left", String(Game.stats.left)],
-      ["Avg Wait", Math.round(avgWait)+"s"],
-      ["86 Events", String(Game.stats.outEvents)],
-      ["Emergency", String(Game.stats.emergency)],
-      ["Mistakes", String(Game.stats.mistakes)],
-      ["Avg Fatigue", pct(avgFat)+"%"],
-      ["Cleanliness", pct(Game.cleanliness)+"%"],
-      ["Rating", U.star(Game.rating)]
-    ];
-
-    ctx.font=`${14*s}px system-ui`;
-    let y = pad + 50*s;
-    for(const [k,v] of lines){
-      ctx.fillStyle="rgba(166,166,173,0.95)"; ctx.fillText(k, pad, y);
-      ctx.fillStyle="rgba(223,230,255,0.95)"; ctx.fillText(v, pad + 320*s, y);
-      y += 22*s;
-      if(y > h - 70*s) break;
-    }
-
-    ctx.fillStyle="rgba(123,220,255,0.95)";
-    ctx.fillText("Tap / click anywhere to return to Build Mode (next day)", pad, h - 40*s);
-  }
-}
-
-/* -------------------- Canvas Interaction (Build) -------------------- */
-function toWorld(px,py){
-  const rect = canvas.getBoundingClientRect();
-  const x = (px - rect.left) * (canvas.width / rect.width) / DPR;
-  const y = (py - rect.top) * (canvas.height / rect.height) / DPR;
-  return {x,y};
-}
-canvas.addEventListener("pointerdown", (e)=>{
-  const p = toWorld(e.clientX, e.clientY);
-
-  if(Game.reportOpen){
-    Game.day += 1;
-    Game.reportOpen = false;
-    Game.mode="BUILD";
-    Game.building=true;
-    Game.cleanliness = U.clamp(Game.cleanliness + 0.10, 0, 1);
-    saveGame();
-    buildStaffUI();
-    toast("New day. Build + staff + then start service.");
-    return;
-  }
-
-  if(Game.mode !== "BUILD") return;
-
-  const hit = pickItemAt(p.x, p.y);
-
-  if(Game.tool === "select"){
-    selectItem(hit);
-    if(hit){
-      const obj = getSelectedObj();
-      if(obj){
-        const offsetX = p.x - obj.x;
-        const offsetY = p.y - obj.y;
-        Game.drag = { kind: hit.kind, id: hit.id, offsetX, offsetY };
-        canvas.setPointerCapture(e.pointerId);
+      if(a.role===ROLE.JANITOR){
+        if(needNew){
+          setTarget(a, {x: U.r(D.x+30, D.x+D.w-30), y: U.r(D.y+30, D.y+D.h-30)});
+        }
       }
+      if(a.role===ROLE.WAITER){
+        // If there are tickets DONE, go pick up at PASS then deliver to table.
+        const done = (S.tickets||[]).find(t=>t.stage==="DONE");
+        if(done && !a.carrying){
+          if(needNew) setTarget(a, passPoint(S));
+          const arrived = stepTowards(a, dt);
+          if(arrived){
+            a.carrying = { ticketId: done.id, tableId: done.tableId };
+            // remove ticket to simulate delivery being handled (visual); service logic still uses tickets to find DONE
+            // so we keep ticket; but mark as "delivering" to avoid multiple waiters
+            done._delivering = true;
+            setTarget(a, pickTablePoint(S, done.tableId) || {x:entry.x,y:entry.y});
+          }
+          continue;
+        }
+
+        if(a.carrying){
+          if(needNew) setTarget(a, pickTablePoint(S, a.carrying.tableId) || {x:entry.x,y:entry.y});
+        }else{
+          // go to a random occupied table or entry
+          if(needNew){
+            const g = (S.guests||[])[Math.floor(Math.random()*(S.guests||[]).length)];
+            if(g && g.tableId) setTarget(a, pickTablePoint(S,g.tableId));
+            else setTarget(a, {x: entry.x-30, y: entry.y+U.r(-30,30)});
+          }
+        }
+      }
+
+      if(a.role===ROLE.GUEST){
+        // follow guest phase: from entry -> table -> entry
+        const g = (S.guests||[]).find(x=>x.id===a.guestId);
+        if(!g){ setTarget(a, {x:entry.x,y:entry.y}); continue; }
+        if(g.phase==="SEATED" || g.phase==="ORDERED" || g.phase==="EATING"){
+          const p = pickTablePoint(S,g.tableId);
+          if(p) setTarget(a, p);
+        }else{
+          setTarget(a, {x: entry.x+U.r(-8,8), y: entry.y+U.r(-8,8)});
+        }
+      }
+
+      // movement
+      stepTowards(a, dt);
+
+      // waiter drop-off
+      if(a.role===ROLE.WAITER && a.carrying){
+        const drop = (Math.abs(a.tx-a.x)+Math.abs(a.ty-a.y) < 3);
+        if(drop){
+          a.carrying = null;
+          // return to pass area
+          setTarget(a, passPoint(S));
+        }
+      }
+    }
+  }
+
+  return { spawnStaff, tick, ROLE };
+});
+// -------------------- hints --------------------
+RT.define("hints", ["world","staff"], (World, Staff) => {
+  function build(S){
+    const tips = [];
+    const c = World.counts(S);
+    const dirtyRatio = (S.platesDirty||0) / Math.max(1, (S.platesTotal||1));
+    const fohCap = Math.max(1, S.waiters) * 2.8;
+    const fohLoad = (S.guests?.length||0) / Math.max(1, fohCap);
+
+    const sp = Staff.stationStaffProfile(S,"PREP");
+    const sc = Staff.stationStaffProfile(S,"COOK");
+    const sx = Staff.stationStaffProfile(S,"PASS");
+
+    if(S.mode!=="SERVICE"){
+      tips.push({pill:"BUILD", text:"<b>Build Mode:</b> Tap to place. Tap item to select. Drag to move. Inspector lists everything you’ve built."});
+      if(c.tables < 3) tips.push({pill:"LAYOUT", text:"Add a few <b>tables</b> first."});
+      if((c.PREP+c.COOK+c.PASS) < 3) tips.push({pill:"STATIONS", text:"Add <b>PREP</b>, <b>COOK</b>, <b>PASS</b> at minimum."});
+      if(c.DISH===0) tips.push({pill:"DISH", text:"Add a <b>Dishwasher</b> to avoid plate-outs."});
+      tips.push({pill:"STAFF", text:"Use <b>Auto Assign Stations</b> so your best cooks cover PREP/COOK/PASS."});
     }else{
-      Game.drag = null;
+      tips.push({pill:"SERVICE", text:"Tap <b>Fix Next</b> to jump to the biggest bottleneck and fix it fast."});
+      if(S.platesClean <= 2) tips.push({pill:"PLATES", text:"Low <b>clean plates</b>. Add dishwashers or reduce seating pressure."});
+      if(dirtyRatio > 0.65) tips.push({pill:"DISH PIT", text:"Dirty plates piling up. More dishwashers (or janitors) helps cleanliness."});
+      if(fohLoad > 1.1) tips.push({pill:"FOH", text:"FOH overloaded. Hire waiters or reduce demand (walk-ins/bookings)."});
+
+      if(c.PREP > sp.capacity) tips.push({pill:"PREP STAFF", text:"More PREP stations than staff capacity. Hire cooks or reassign."});
+      if((c.COOK+c.EXTRA_COOK) > sc.capacity) tips.push({pill:"COOK STAFF", text:"More COOK stations than staff capacity. Hire cooks or reassign."});
+      if(c.PASS > sx.capacity) tips.push({pill:"PASS STAFF", text:"PASS needs a cook assigned to PASS to keep flow stable."});
+
+      if((S.board86||[]).length) tips.push({pill:"86", text:"Items 86’d. Increase inventory (par) or reduce demand."});
     }
-    return;
-  }
 
-  // place tools
-  if(Game.tool === "table"){
-    const ok = addTableAt(p.x, p.y);
-    if(ok){ setTool("select"); selectItem({kind:"table", id: Game.layout.tables[Game.layout.tables.length-1].id}); }
-    return;
+    const bottle = S.lastWorst?.name;
+    if(bottle && bottle!=="—"){
+      tips.push({pill:"BOTTLENECK", text:`<b>Bottleneck: ${bottle}</b> — add capacity there (station + staff) or reduce demand.`});
+    }
+    return tips;
   }
-  if(Game.tool === "prep"){
-    const ok = addStationAt("PREP", p.x, p.y);
-    if(ok){ setTool("select"); selectItem({kind:"station", id: Game.layout.stations[Game.layout.stations.length-1].id}); }
-    return;
-  }
-  if(Game.tool === "cook"){
-    const ok = addStationAt("COOK", p.x, p.y);
-    if(ok){ setTool("select"); selectItem({kind:"station", id: Game.layout.stations[Game.layout.stations.length-1].id}); }
-    return;
-  }
-  if(Game.tool === "pass"){
-    const ok = addStationAt("PASS", p.x, p.y);
-    if(ok){ setTool("select"); selectItem({kind:"station", id: Game.layout.stations[Game.layout.stations.length-1].id}); }
-    return;
-  }
-  if(Game.tool === "walkin"){
-    const ok = addEquipmentAt("WALKIN", p.x, p.y);
-    if(ok){ setTool("select"); selectItem({kind:"equip", id: Game.layout.equipment[Game.layout.equipment.length-1].id}); }
-    return;
-  }
-  if(Game.tool === "dish"){
-    const ok = addEquipmentAt("DISH", p.x, p.y);
-    if(ok){ setTool("select"); selectItem({kind:"equip", id: Game.layout.equipment[Game.layout.equipment.length-1].id}); }
-    return;
-  }
-  if(Game.tool === "extra"){
-    const ok = addEquipmentAt("EXTRA_COOK", p.x, p.y);
-    if(ok){ setTool("select"); selectItem({kind:"equip", id: Game.layout.equipment[Game.layout.equipment.length-1].id}); }
-    return;
-  }
+  return { build };
 });
 
-canvas.addEventListener("pointermove", (e)=>{
-  if(Game.mode !== "BUILD") return;
-  if(!Game.drag) return;
-  const p = toWorld(e.clientX, e.clientY);
-  const obj = getSelectedObj();
-  if(!obj) return;
-
-  obj.x = p.x - Game.drag.offsetX;
-  obj.y = p.y - Game.drag.offsetY;
-  clampToRect(obj, Game.drag.kind);
-  saveGame();
-});
-
-canvas.addEventListener("pointerup", (e)=>{
-  if(Game.mode !== "BUILD") return;
-  if(Game.drag){
-    Game.drag = null;
-    try{ canvas.releasePointerCapture(e.pointerId); }catch{}
-  }
-});
-
-/* -------------------- Build Props UI -------------------- */
-document.getElementById("btnSeatsMinus").addEventListener("click", ()=>{
-  const obj=getSelectedObj(); if(!obj || Game.selected.kind!=="table") return;
-  obj.seats = U.clamp((obj.seats||2)-1, 1, 6);
-  document.getElementById("inpSeats").value = String(obj.seats);
-  document.getElementById("propPill").textContent = obj.seats+" seats";
-  saveGame();
-});
-document.getElementById("btnSeatsPlus").addEventListener("click", ()=>{
-  const obj=getSelectedObj(); if(!obj || Game.selected.kind!=="table") return;
-  obj.seats = U.clamp((obj.seats||2)+1, 1, 6);
-  document.getElementById("inpSeats").value = String(obj.seats);
-  document.getElementById("propPill").textContent = obj.seats+" seats";
-  saveGame();
-});
-document.getElementById("inpSeats").addEventListener("change", ()=>{
-  const obj=getSelectedObj(); if(!obj || Game.selected.kind!=="table") return;
-  obj.seats = U.clamp(Number(document.getElementById("inpSeats").value)||2, 1, 6);
-  document.getElementById("propPill").textContent = obj.seats+" seats";
-  saveGame();
-});
-document.getElementById("btnDelete").addEventListener("click", ()=>{ if(Game.mode==="BUILD") deleteSelected(); });
-
-/* -------------------- Controls -------------------- */
-document.querySelectorAll(".toolBtn").forEach(btn=>{
-  btn.addEventListener("click", ()=> setTool(btn.getAttribute("data-tool")));
-});
-document.getElementById("btnExpandFloor").addEventListener("click", ()=>{ if(Game.mode==="BUILD") expandFloor(); });
-document.getElementById("btnExpandKitchen").addEventListener("click", ()=>{ if(Game.mode==="BUILD") expandKitchen(); });
-
-document.getElementById("btnBuildToggle").addEventListener("click", ()=>{
-  if(Game.mode==="SERVICE"){ toast("Can't build during service."); return; }
-  if(Game.mode==="REPORT"){ toast("Finish report (tap canvas)."); return; }
-  Game.mode = (Game.mode==="BUILD") ? "BUILD" : "BUILD";
-  Game.building = true;
-  toast("Build mode.");
-});
-
-document.getElementById("btnStart").addEventListener("click", ()=>{
-  if(Game.mode==="SERVICE"){ return; }
-  const pc = physCounts();
-  if(Game.layout.tables.length < 1 || pc.PREP<1 || pc.COOK<1 || pc.PASS<1){
-    toast("Need tables + PREP + COOK + PASS stations.");
-    return;
-  }
-  startService();
-});
-document.getElementById("btnPause").addEventListener("click", ()=>{
-  if(Game.mode!=="SERVICE") return;
-  Game.paused = !Game.paused;
-});
-document.getElementById("btnSpeed").addEventListener("click", ()=>{ Game.speedIdx = (Game.speedIdx+1) % Game.speedList.length; });
-document.getElementById("btnReset").addEventListener("click", ()=>resetAll());
-
-
-// Reservations UI (Stage 9)
-function syncResUIToState(){
-  const st = Game.resSettings || (Game.resSettings={ pct:55, vipPct:6, overbookPct:10, acceptWalkins:true, holdTables:true });
-  const pct = document.getElementById("resPct");
-  const vip = document.getElementById("vipPct");
-  const ob  = document.getElementById("overbookPct");
-  const aw  = document.getElementById("acceptWalkins");
-  const ht  = document.getElementById("holdTables");
-  if(pct){ pct.value = st.pct; document.getElementById("resPctLbl").textContent = st.pct; }
-  if(vip){ vip.value = st.vipPct; document.getElementById("vipPctLbl").textContent = st.vipPct; }
-  if(ob){  ob.value  = st.overbookPct; document.getElementById("overbookLbl").textContent = st.overbookPct; }
-  if(aw) aw.checked = !!st.acceptWalkins;
-  if(ht) ht.checked = !!st.holdTables;
-}
-function resUIListeners(){
-  const pct = document.getElementById("resPct");
-  const vip = document.getElementById("vipPct");
-  const ob  = document.getElementById("overbookPct");
-  const aw  = document.getElementById("acceptWalkins");
-  const ht  = document.getElementById("holdTables");
-  const regen = document.getElementById("btnRegenerateRes");
-
-  const upd = ()=>{
-    const st = Game.resSettings || (Game.resSettings={ pct:55, vipPct:6, overbookPct:10, acceptWalkins:true, holdTables:true });
-    if(pct) st.pct = Math.round(+pct.value);
-    if(vip) st.vipPct = Math.round(+vip.value);
-    if(ob)  st.overbookPct = Math.round(+ob.value);
-    if(aw)  st.acceptWalkins = !!aw.checked;
-    if(ht)  st.holdTables = !!ht.checked;
-
-    if(pct) document.getElementById("resPctLbl").textContent = st.pct;
-    if(vip) document.getElementById("vipPctLbl").textContent = st.vipPct;
-    if(ob)  document.getElementById("overbookLbl").textContent = st.overbookPct;
-
-    saveGame();
-    updateUI();
+// -------------------- tutorial --------------------
+RT.define("tutorial", ["util","storage"], (U, Storage) => {
+  const T = {
+    step: 0,
+    steps: [
+      { title:"Welcome", body:"This build is <b>one file</b> but organised internally into modules. The <b>Inspector</b> lists everything so you don’t lose objects.", focus:null },
+      { title:"Build Tools", body:"Pick a tool, then tap the canvas to place. Tap an item to select. Drag to move.", focus:"#toolGrid" },
+      { title:"Inspector", body:"Tap items in the list to re-select instantly.", focus:"#inspectorCard" },
+      { title:"Staff & Skills", body:"Cooks have skills for <b>PREP/COOK/PASS</b>. Capacity is capped by <b>stations</b> AND <b>assigned staff</b>.", focus:"#btnAutoAssign" },
+      { title:"Service Shift", body:"Start service to stress-test your build. Shift ends automatically.", focus:"#btnStart" },
+    ]
   };
 
-  if(pct) pct.addEventListener("input", upd);
-  if(vip) vip.addEventListener("input", upd);
-  if(ob)  ob.addEventListener("input", upd);
-  if(aw)  aw.addEventListener("change", upd);
-  if(ht)  ht.addEventListener("change", upd);
+  function open(){ const m = document.getElementById("tutorialModal"); m.classList.add("show"); m.setAttribute("aria-hidden","false"); }
+  function close(){ const m = document.getElementById("tutorialModal"); m.classList.remove("show"); m.setAttribute("aria-hidden","true"); document.querySelectorAll(".coachGlow").forEach(n=>n.classList.remove("coachGlow")); }
 
-  if(regen) regen.addEventListener("click", ()=>{
-    if(Game.mode!=="SERVICE") buildRuntimeTablesFromLayout();
-    generateReservationsForToday();
-    toast("Bookings regenerated for today.");
-    updateUI();
-  });
-}
-
-document.getElementById("btnHireCook").addEventListener("click", ()=>{
-  Game.cooks.push(createCook());
-  toast("Hired a cook.");
-  autoAssignStations(true);
-  saveGame();
-  buildStaffUI();
-});
-document.getElementById("btnHireJanitor").addEventListener("click", ()=>{
-  Game.janitors += 1;
-  toast("Hired a janitor.");
-  saveGame();
-});
-document.getElementById("btnAutoAssign").addEventListener("click", ()=>autoAssignStations(false));
-
-/* -------------------- Main Loop -------------------- */
-let last = U.now();
-function loop(){
-  const now = U.now();
-  let dt = now - last;
-  last = now;
-  dt = U.clamp(dt, 0, 0.05);
-
-  if(Game.mode==="SERVICE" && Game.running && !Game.paused){
-    const speed = Game.speedList[Game.speedIdx];
-    const sdt = dt * speed;
-    Game.t += sdt;
-    updateSim(sdt);
+  function coachFocus(sel){
+    document.querySelectorAll(".coachGlow").forEach(n=>n.classList.remove("coachGlow"));
+    if(!sel) return;
+    const el = document.querySelector(sel);
+    if(el){ el.classList.add("coachGlow"); el.scrollIntoView({behavior:"smooth", block:"center"}); }
   }
 
-  if(!Game.stats) Game.stats = freshStats();
+  function render(){
+    const step = T.steps[T.step];
+    document.getElementById("tutStepMeta").textContent = `Step ${T.step+1} of ${T.steps.length}`;
+    document.getElementById("tutStepTitle").textContent = step.title;
+    document.getElementById("tutStepBody").innerHTML = step.body;
+    document.getElementById("btnTutPrev").disabled = (T.step===0);
+    document.getElementById("btnTutNext").textContent = (T.step===T.steps.length-1) ? "Finish" : "Next";
+    coachFocus(step.focus);
+  }
 
-  updateUI();
-  draw();
-  requestAnimationFrame(loop);
-}
+  function start(at=0){ T.step = U.clamp(at,0,T.steps.length-1); render(); open(); }
+  function next(){
+    if(T.step >= T.steps.length-1){ Storage.setTutSeen(); close(); return; }
+    T.step += 1; render();
+  }
+  function prev(){ T.step = Math.max(0, T.step-1); render(); }
 
-/* -------------------- Boot -------------------- */
-(function boot(){
-  if(!CanvasRenderingContext2D.prototype.roundRect){
-    CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
-      r = Math.min(r, w/2, h/2);
-      this.beginPath();
-      this.moveTo(x+r,y);
-      this.arcTo(x+w,y,x+w,y+h,r);
-      this.arcTo(x+w,y+h,x,y+h,r);
-      this.arcTo(x,y+h,x,y,r);
-      this.arcTo(x,y,x+w,y,r);
-      this.closePath();
-      return this;
+  function maybeAuto(){
+    const dont = !!document.getElementById("tutDontShow")?.checked;
+    if(!Storage.tutSeen() && !dont) start(0);
+  }
+
+  return { start, next, prev, close, maybeAuto, coachFocus };
+});
+
+// -------------------- tips bubble --------------------
+RT.define("tips", [], () => {
+  const tipBubble = (show)=>{
+    const b = document.getElementById("tipBubble");
+    if(!b) return;
+    b.classList.toggle("show", !!show);
+    b.setAttribute("aria-hidden", show ? "false":"true");
+  };
+  const showTip = (title, body)=>{
+    document.getElementById("tipTitle").textContent = title || "Tip";
+    document.getElementById("tipBody").innerHTML = body || "";
+    tipBubble(true);
+  };
+  const close = ()=>tipBubble(false);
+
+  function wireClose(){
+    const closeBtn = document.getElementById("btnTipClose");
+    if(closeBtn && !closeBtn._wired){
+      closeBtn._wired = true;
+      closeBtn.addEventListener("click", ()=>tipBubble(false));
+      document.addEventListener("click", (e)=>{
+        const b = document.getElementById("tipBubble");
+        if(!b || !b.classList.contains("show")) return;
+        if(e.target.closest && (e.target.closest("#tipBubble") || e.target.closest(".tipIcon"))) return;
+        tipBubble(false);
+      });
     }
   }
-  Game.stats = freshStats();
-  loadGame();
-  ensureDefaultCooks();
 
-  if(!Game.platesTotal || Game.platesTotal < 10){ Game.platesTotal = DATA.platesBase; }
-  if(Game.platesClean==null){ Game.platesClean = Game.platesTotal; }
-  if(Game.platesDirty==null){ Game.platesDirty = 0; }
+  return { showTip, close, wireClose };
+});
 
-  // defaults for pars
-  for(const d of DATA.menu){
-    if(!(d.id in Game.parPlan)) Game.parPlan[d.id]=12;
-    if(!(d.id in Game.carryStock)) Game.carryStock[d.id]=0;
+// -------------------- renderer --------------------
+RT.define("renderer", ["world","util"], (World, U) => {
+  // Better graphics: soft tiles, depth, icons, subtle animation (steam), and polished selection.
+  function roundRect(ctx,x,y,w,h,r){
+    const rr = Math.min(r, w/2, h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+rr,y);
+    ctx.arcTo(x+w,y,x+w,y+h,rr);
+    ctx.arcTo(x+w,y+h,x,y+h,rr);
+    ctx.arcTo(x,y+h,x,y,rr);
+    ctx.arcTo(x,y,x+w,y,rr);
+    ctx.closePath();
   }
 
-  rebuildRuntimeFromLayout();
-  initStationsRuntime();
-  buildStaffUI();
-  selectItem(null);
-  setTool("select");
+  // Cached patterns (created once per canvas)
+  let _cache = { w:0, h:0, tile:null, noise:null };
 
-  Game.mode="BUILD";
-  toast("Stage 5 loaded: Build your layout, then Start Service.");
+  function makeTilePattern(ctx){
+    const p = document.createElement("canvas");
+    p.width = 80; p.height = 80;
+    const g = p.getContext("2d");
+
+    // base
+    const bg = g.createLinearGradient(0,0,80,80);
+    bg.addColorStop(0,"rgba(255,255,255,0.035)");
+    bg.addColorStop(1,"rgba(255,255,255,0.010)");
+    g.fillStyle = bg;
+    g.fillRect(0,0,80,80);
+
+    // tiles
+    g.strokeStyle = "rgba(255,255,255,0.06)";
+    g.lineWidth = 2;
+    g.beginPath();
+    for(let x=0;x<=80;x+=20){ g.moveTo(x,0); g.lineTo(x,80); }
+    for(let y=0;y<=80;y+=20){ g.moveTo(0,y); g.lineTo(80,y); }
+    g.stroke();
+
+    // small specks
+    for(let i=0;i<90;i++){
+      const x = Math.random()*80, y = Math.random()*80;
+      g.fillStyle = "rgba(255,255,255,0.05)";
+      g.fillRect(x,y,1,1);
+    }
+
+    return ctx.createPattern(p,"repeat");
+  }
+
+  function makeNoiseOverlay(ctx){
+    const n = document.createElement("canvas");
+    n.width = 240; n.height = 240;
+    const g = n.getContext("2d");
+    const img = g.createImageData(n.width,n.height);
+    for(let i=0;i<img.data.length;i+=4){
+      const v = Math.random()*255;
+      img.data[i]=img.data[i+1]=img.data[i+2]=v;
+      img.data[i+3]=10; // subtle alpha
+    }
+    g.putImageData(img,0,0);
+    return ctx.createPattern(n,"repeat");
+  }
+
+  function ensureCache(ctx){
+    const W = ctx.canvas.width, H = ctx.canvas.height;
+    if(_cache.w!==W || _cache.h!==H || !_cache.tile){
+      _cache = { w:W, h:H, tile: makeTilePattern(ctx), noise: makeNoiseOverlay(ctx) };
+    }
+  }
+
+  const isSelected = (S, kind, id)=> (S.selected && S.selected.kind===kind && S.selected.id===id);
+
+  function shadow(ctx, y=3, blur=10, a=0.35){
+    ctx.shadowColor = `rgba(0,0,0,${a})`;
+    ctx.shadowBlur = blur;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = y;
+  }
+
+  function zonePanel(ctx, r, label, tint){
+    ctx.save();
+    // soft panel
+    shadow(ctx, 10, 18, 0.35);
+    ctx.fillStyle = "rgba(255,255,255,0.03)";
+    roundRect(ctx, r.x, r.y, r.w, r.h, 18);
+    ctx.fill();
+    ctx.shadowColor="transparent";
+
+    // border
+    ctx.strokeStyle = "rgba(255,255,255,0.16)";
+    ctx.lineWidth = 2;
+    roundRect(ctx, r.x, r.y, r.w, r.h, 18);
+    ctx.stroke();
+
+    // header tag
+    const tagW = 110, tagH = 26;
+    shadow(ctx, 6, 10, 0.25);
+    const grad = ctx.createLinearGradient(r.x, r.y, r.x+tagW, r.y+tagH);
+    grad.addColorStop(0, tint);
+    grad.addColorStop(1, "rgba(255,255,255,0.06)");
+    ctx.fillStyle = grad;
+    roundRect(ctx, r.x+10, r.y+10, tagW, tagH, 12);
+    ctx.fill();
+    ctx.shadowColor="transparent";
+
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    ctx.font = "12px system-ui";
+    ctx.fillText(label, r.x+22, r.y+28);
+    ctx.restore();
+  }
+
+  function iconFork(ctx,x,y,s,alpha=0.8){
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle="rgba(255,255,255,0.85)";
+    ctx.lineWidth=2;
+    ctx.lineCap="round";
+    ctx.beginPath();
+    // fork
+    ctx.moveTo(-s*0.20,-s*0.25); ctx.lineTo(-s*0.20,s*0.25);
+    ctx.moveTo(-s*0.32,-s*0.25); ctx.lineTo(-s*0.32,-s*0.05);
+    ctx.moveTo(-s*0.24,-s*0.25); ctx.lineTo(-s*0.24,-s*0.05);
+    ctx.moveTo(-s*0.16,-s*0.25); ctx.lineTo(-s*0.16,-s*0.05);
+    // knife
+    ctx.moveTo(s*0.22,-s*0.25); ctx.lineTo(s*0.22,s*0.25);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawEntry(ctx, x, y){
+    ctx.save();
+    shadow(ctx, 6, 10, 0.28);
+    ctx.fillStyle = "rgba(255,210,91,0.20)";
+    ctx.strokeStyle = "rgba(255,210,91,0.65)";
+    ctx.lineWidth = 2;
+    roundRect(ctx, x-18, y-14, 58, 28, 14);
+    ctx.fill(); ctx.stroke();
+    ctx.shadowColor="transparent";
+    iconFork(ctx, x+6, y, 22, 0.8);
+    ctx.fillStyle = "rgba(255,255,255,0.86)";
+    ctx.font = "12px system-ui";
+    ctx.fillText("ENTRY", x+48, y+4);
+    ctx.restore();
+  }
+
+  function drawTable(ctx, t, selected, held, pulse){
+    const w = t.seats===4 ? 62 : 52;
+    const h = 44;
+
+    ctx.save();
+    ctx.translate(t.x, t.y);
+
+    // selection ring
+    if(selected){
+      ctx.save();
+      ctx.globalAlpha = 0.55 + 0.35*Math.sin(pulse);
+      ctx.strokeStyle = "rgba(255,210,91,0.95)";
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, w*0.62, h*0.62, 0, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // shadow + top
+    shadow(ctx, 8, 14, 0.32);
+    const top = ctx.createLinearGradient(-w/2,-h/2,w/2,h/2);
+    top.addColorStop(0, held ? "rgba(255,210,91,0.22)" : "rgba(120,198,255,0.16)");
+    top.addColorStop(1, "rgba(255,255,255,0.04)");
+    ctx.fillStyle = top;
+
+    ctx.strokeStyle = selected ? "rgba(255,210,91,0.95)" : "rgba(255,255,255,0.22)";
+    ctx.lineWidth = selected ? 3 : 2;
+    roundRect(ctx, -w/2, -h/2, w, h, 14);
+    ctx.fill(); ctx.stroke();
+    ctx.shadowColor="transparent";
+
+    // chairs (simple dots)
+    ctx.fillStyle = "rgba(255,255,255,0.18)";
+    const chairs = (t.seats||2);
+    const pts = chairs===4 ? [[-w*0.30,-h*0.68],[w*0.30,-h*0.68],[-w*0.30,h*0.68],[w*0.30,h*0.68]]
+                           : [[-w*0.24,-h*0.68],[w*0.24,h*0.68]];
+    for(const [cx,cy] of pts){
+      ctx.beginPath(); ctx.arc(cx,cy,5,0,Math.PI*2); ctx.fill();
+    }
+
+    // label
+    ctx.fillStyle = "rgba(255,255,255,0.90)";
+    ctx.font = "12px system-ui";
+    ctx.textAlign="center";
+    ctx.fillText(t.id, 0, 5);
+
+    if(held){
+      ctx.fillStyle="rgba(255,210,91,0.95)";
+      ctx.font="10px system-ui";
+      ctx.fillText("HELD", 0, 19);
+    }
+    ctx.restore();
+  }
+
+  function stationIcon(ctx, type){
+    ctx.save();
+    ctx.strokeStyle="rgba(255,255,255,0.88)";
+    ctx.lineWidth=2;
+    ctx.lineCap="round";
+    ctx.lineJoin="round";
+    ctx.globalAlpha=0.95;
+    ctx.beginPath();
+    if(type==="PREP"){
+      // knife
+      ctx.moveTo(-14,-6); ctx.lineTo(10,10);
+      ctx.moveTo(-6,-14); ctx.lineTo(14,6);
+    }else if(type==="COOK"){
+      // flame
+      ctx.moveTo(0,-12);
+      ctx.quadraticCurveTo(10,-2,0,12);
+      ctx.quadraticCurveTo(-10,-2,0,-12);
+    }else{
+      // pass bell
+      ctx.arc(0,2,10,Math.PI,0);
+      ctx.moveTo(-10,2); ctx.lineTo(10,2);
+      ctx.moveTo(0,-12); ctx.lineTo(0,-14);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawStation(ctx, st, selected, pulse){
+    const w=78,h=42;
+    ctx.save();
+    ctx.translate(st.x, st.y);
+
+    // selection ring
+    if(selected){
+      ctx.save();
+      ctx.globalAlpha = 0.55 + 0.35*Math.sin(pulse);
+      ctx.strokeStyle = "rgba(255,210,91,0.95)";
+      ctx.lineWidth = 5;
+      roundRect(ctx, -w/2-6, -h/2-6, w+12, h+12, 16);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    shadow(ctx, 8, 14, 0.30);
+    const base = ctx.createLinearGradient(-w/2,-h/2,w/2,h/2);
+    const tint = st.type==="COOK" ? "rgba(255,97,97,0.18)" : (st.type==="PREP" ? "rgba(120,198,255,0.18)" : "rgba(185,255,161,0.14)");
+    base.addColorStop(0, tint);
+    base.addColorStop(1, "rgba(255,255,255,0.04)");
+    ctx.fillStyle = base;
+
+    ctx.strokeStyle = selected ? "rgba(255,210,91,0.95)" : "rgba(255,255,255,0.22)";
+    ctx.lineWidth = selected ? 3 : 2;
+    roundRect(ctx, -w/2, -h/2, w, h, 14);
+    ctx.fill(); ctx.stroke();
+    ctx.shadowColor="transparent";
+
+    // icon
+    stationIcon(ctx, st.type);
+
+    // label
+    ctx.fillStyle="rgba(255,255,255,0.88)";
+    ctx.font="12px system-ui";
+    ctx.textAlign="center";
+    ctx.fillText(st.type, 0, 6);
+    ctx.font="10px system-ui";
+    ctx.fillStyle="rgba(255,255,255,0.60)";
+    ctx.fillText(st.id, 0, 20);
+
+    ctx.restore();
+  }
+
+  function drawEquip(ctx, e, selected, pulse){
+    const w=64,h=36;
+    ctx.save();
+    ctx.translate(e.x, e.y);
+
+    if(selected){
+      ctx.save();
+      ctx.globalAlpha = 0.55 + 0.35*Math.sin(pulse);
+      ctx.strokeStyle = "rgba(255,210,91,0.95)";
+      ctx.lineWidth = 5;
+      roundRect(ctx, -w/2-6, -h/2-6, w+12, h+12, 14);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    shadow(ctx, 8, 14, 0.30);
+    const base = ctx.createLinearGradient(-w/2,-h/2,w/2,h/2);
+    base.addColorStop(0,"rgba(255,255,255,0.09)");
+    base.addColorStop(1,"rgba(255,255,255,0.03)");
+    ctx.fillStyle=base;
+
+    ctx.strokeStyle= selected ? "rgba(255,210,91,0.95)" : "rgba(255,255,255,0.22)";
+    ctx.lineWidth = selected ? 3 : 2;
+    roundRect(ctx, -w/2, -h/2, w, h, 12);
+    ctx.fill(); ctx.stroke();
+    ctx.shadowColor="transparent";
+
+    // tiny icon
+    ctx.save();
+    ctx.strokeStyle="rgba(255,255,255,0.82)";
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    if(e.type==="DISH"){
+      ctx.arc(0,2,10,0,Math.PI*2);
+      ctx.moveTo(-6,-6); ctx.lineTo(6,10);
+    }else if(e.type==="WALKIN"){
+      roundRect(ctx, -12,-10,24,22,6);
+      ctx.moveTo(0,-10); ctx.lineTo(0,12);
+    }else{
+      ctx.moveTo(-10,8); ctx.lineTo(10,8);
+      ctx.moveTo(-8,2); ctx.lineTo(8,2);
+      ctx.moveTo(-6,-4); ctx.lineTo(6,-4);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.fillStyle="rgba(255,255,255,0.86)";
+    ctx.font="10px system-ui";
+    ctx.textAlign="center";
+    const name = e.type==="DISH"?"DISH":(e.type==="WALKIN"?"WALK-IN":(e.type==="EXTRA_COOK"?"COOKTOP":"EQUIP"));
+    ctx.fillText(name, 0, 16);
+
+    ctx.restore();
+  }
+
+  function drawSteam(ctx, x, y, t){
+    // subtle animated steam above COOK stations
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.globalAlpha = 0.22;
+    ctx.strokeStyle="rgba(255,255,255,0.75)";
+    ctx.lineWidth=2;
+    for(let i=0;i<3;i++){
+      const phase = t*1.2 + i*1.3;
+      const ox = Math.sin(phase)*6 + (i-1)*8;
+      const oy = -28 - (phase*10 % 22);
+      ctx.beginPath();
+      ctx.moveTo(ox, oy);
+      ctx.quadraticCurveTo(ox+6, oy+8, ox, oy+16);
+      ctx.quadraticCurveTo(ox-6, oy+22, ox, oy+30);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function draw(ctx, S){
+    ensureCache(ctx);
+
+    const W = ctx.canvas.width, H = ctx.canvas.height;
+    ctx.clearRect(0,0,W,H);
+
+    // background gradient
+    const bg = ctx.createLinearGradient(0,0,0,H);
+    bg.addColorStop(0,"rgba(255,255,255,0.03)");
+    bg.addColorStop(1,"rgba(0,0,0,0.08)");
+    ctx.fillStyle = bg;
+    ctx.fillRect(0,0,W,H);
+
+    // tiles
+    ctx.save();
+    ctx.globalAlpha = 1.0;
+    ctx.fillStyle = _cache.tile;
+    ctx.fillRect(0,0,W,H);
+    ctx.restore();
+
+    // noise overlay
+    ctx.save();
+    ctx.globalAlpha = 0.20;
+    ctx.fillStyle = _cache.noise;
+    ctx.fillRect(0,0,W,H);
+    ctx.restore();
+
+    // subtle vignette
+    ctx.save();
+    const v = ctx.createRadialGradient(W*0.5,H*0.35, 20, W*0.5,H*0.35, Math.max(W,H)*0.75);
+    v.addColorStop(0,"rgba(0,0,0,0.0)");
+    v.addColorStop(1,"rgba(0,0,0,0.30)");
+    ctx.fillStyle = v;
+    ctx.fillRect(0,0,W,H);
+    ctx.restore();
+
+    const D = S.layout.diningRect, K = S.layout.kitchenRect;
+    zonePanel(ctx, D, "DINING", "rgba(120,198,255,0.22)");
+    zonePanel(ctx, K, "KITCHEN", "rgba(255,97,97,0.18)");
+
+    // entry
+    drawEntry(ctx, S.layout.entry.x, S.layout.entry.y);
+
+    // pulse timer for selection
+    const pulse = (S.t || 0) * 2.2;
+
+    // draw objects
+    for(const t of S.layout.tables){
+      drawTable(ctx, t, isSelected(S,"table",t.id), (S.heldTableIds||[]).includes(t.id), pulse);
+    }
+    for(const st of S.layout.stations){
+      drawStation(ctx, st, isSelected(S,"station",st.id), pulse);
+      if(S.mode==="SERVICE" && st.type==="COOK") drawSteam(ctx, st.x, st.y, S.t||0);
+    }
+    for(const e of S.layout.equipment){
+      drawEquip(ctx, e, isSelected(S,"equip",e.id), pulse);
+    }
+
+    // guests markers
+    if(S.mode==="SERVICE"){
+      for(const g of S.guests){
+        if(!g.tableId) continue;
+        const t = S.layout.tables.find(x=>x.id===g.tableId);
+        if(!t) continue;
+        ctx.save();
+        ctx.fillStyle = g.vip ? "rgba(255,210,91,0.90)" : "rgba(120,198,255,0.82)";
+        ctx.font = "11px system-ui";
+        ctx.fillText(`${g.size}p`, t.x-14, t.y-22);
+        ctx.restore();
+      }
+    }
+
+    
+    // actors (staff + guests) sprites
+    if(S.actors && S.actors.length){
+      for(const a of S.actors){
+        ctx.save();
+        const isGuest = a.role==="GUEST";
+        const r = isGuest ? (a.vip ? 7 : 6) : (a.role==="WAITER" ? 6 : 6);
+        // colors by role (no explicit style names; just rgba)
+        let fill = "rgba(255,255,255,0.80)";
+        let stroke = "rgba(0,0,0,0.35)";
+        if(a.role==="COOK") fill = "rgba(255,97,97,0.85)";
+        if(a.role==="WAITER") fill = "rgba(120,198,255,0.85)";
+        if(a.role==="JANITOR") fill = "rgba(185,255,161,0.80)";
+        if(a.role==="GUEST") fill = a.vip ? "rgba(255,210,91,0.92)" : "rgba(255,255,255,0.78)";
+
+        // tiny shadow
+        ctx.globalAlpha = 0.95;
+        ctx.fillStyle = "rgba(0,0,0,0.32)";
+        ctx.beginPath();
+        ctx.ellipse(a.x, a.y + (isGuest?7:6), r*0.95, r*0.55, 0, 0, Math.PI*2);
+        ctx.fill();
+
+        // body
+        ctx.fillStyle = fill;
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(a.x, a.y, r, 0, Math.PI*2);
+        ctx.fill();
+        ctx.stroke();
+
+        // waiter carrying
+        if(a.role==="WAITER" && a.carrying){
+          ctx.fillStyle = "rgba(255,210,91,0.90)";
+          ctx.beginPath();
+          ctx.arc(a.x + 9, a.y - 7, 3, 0, Math.PI*2);
+          ctx.fill();
+        }
+
+        ctx.restore();
+      }
+    }
+// selection footer
+    if(S.selected){
+      const obj = World.findSelectedObj(S);
+      if(obj){
+        ctx.save();
+        shadow(ctx, 8, 18, 0.35);
+        ctx.fillStyle="rgba(20,22,26,0.75)";
+        roundRect(ctx, 12, H-46, 420, 32, 14);
+        ctx.fill();
+        ctx.shadowColor="transparent";
+        ctx.fillStyle="rgba(255,255,255,0.92)";
+        ctx.font="12px system-ui";
+        ctx.fillText(`Selected: ${S.selected.kind.toUpperCase()} · ${obj.id || ""} ${obj.type?("· "+obj.type):""} ${obj.seats?("· "+obj.seats+" seats"):""}`, 24, H-26);
+        ctx.restore();
+      }
+    }
+  }
+
+  return { draw };
+});
+
+// -------------------- UI --------------------
+RT.define("ui", ["util","data","storage","world","build","state","staff","reservations","service","hints","tutorial","tips","renderer"],
+(U, D, Storage, World, Build, State, Staff, Res, Service, Hints, Tutorial, Tips, Renderer) => {
+
+  function qs(id){ return document.getElementById(id); }
+
+  const ui = {
+    canvas: qs("game"),
+    ctx: null,
+    toastEl: qs("toast"),
+    toolGrid: qs("toolGrid"),
+    inspectorBody: qs("inspectorBody"),
+    selPill: qs("selPill"),
+    modePill: qs("modePill"),
+    bottlePill: qs("bottlePill"),
+    resPill: qs("resPill"),
+    resMiniPill: qs("resMiniPill"),
+    hintPill: qs("hintPill"),
+    hintText: qs("hintText"),
+    resList: qs("resList"),
+    cashLbl: qs("cashLbl"),
+    ratingLbl: qs("ratingLbl"),
+    cleanLbl: qs("cleanLbl"),
+    platesLbl: qs("platesLbl"),
+    profitLbl: qs("profitLbl"),
+    shiftLbl: qs("shiftLbl"),
+    board86: qs("board86"),
+    svcPill: qs("svcPill"),
+    staffPill: qs("staffPill"),
+    staffList: qs("staffList"),
+
+    btnStart: qs("btnStart"),
+    btnPause: qs("btnPause"),
+    btnSpeed: qs("btnSpeed"),
+    btnReset: qs("btnReset"),
+    presetSel: qs("presetSel"),
+    btnApplyPreset: qs("btnApplyPreset"),
+    btnFixNext: qs("btnFixNext"),
+    btnTutorial: qs("btnTutorial"),
+    btnHints: qs("btnHints"),
+    btnSnap: qs("btnSnap"),
+    btnDeleteSel: qs("btnDeleteSel"),
+
+    btnHireCook: qs("btnHireCook"),
+    btnHireWaiter: qs("btnHireWaiter"),
+    btnHireJanitor: qs("btnHireJanitor"),
+    btnAutoAssign: qs("btnAutoAssign"),
+
+    btnHintPrev: qs("btnHintPrev"),
+    btnHintNext: qs("btnHintNext"),
+    btnHintPin: qs("btnHintPin"),
+
+    resPct: qs("resPct"),
+    vipPct: qs("vipPct"),
+    overbookPct: qs("overbookPct"),
+    resPctLbl: qs("resPctLbl"),
+    vipPctLbl: qs("vipPctLbl"),
+    overbookLbl: qs("overbookLbl"),
+    acceptWalkins: qs("acceptWalkins"),
+    holdTables: qs("holdTables"),
+    btnRegenerateRes: qs("btnRegenerateRes"),
+
+    toast:(msg)=>{
+      ui.toastEl.textContent = msg;
+      ui.toastEl.style.opacity = 1;
+      clearTimeout(ui._toastT);
+      ui._toastT = setTimeout(()=>ui.toastEl.style.opacity=0, 1200);
+    }
+  };
+  ui.ctx = ui.canvas.getContext("2d");
+
+  function buildToolsUI(S){
+    const grid = ui.toolGrid;
+    grid.innerHTML = "";
+    for(const t of D.TOOL_DEFS){
+      const b = document.createElement("div");
+      b.className = "toolBtn" + (S.tool===t.key ? " active":"");
+      b.innerHTML = `<span>${t.label}</span><span class="small">${t.zone}</span>`;
+      b.addEventListener("click", ()=>{
+        S.tool = t.key;
+        buildToolsUI(S);
+        ui.toast(`Tool: ${t.label}`);
+      });
+      grid.appendChild(b);
+    }
+  }
+
+  function itemRow(kind,id,label,selected){
+    const active = selected && selected.kind===kind && selected.id===id;
+    return `<div class="ticket" style="cursor:pointer; ${active?'border-color: rgba(255,210,91,0.35); background: rgba(255,210,91,0.07);':''}" data-sel-kind="${kind}" data-sel-id="${id}">
+      <div class="top">
+        <div class="title">${label}</div>
+        <div class="meta">${kind.toUpperCase()} · <b>${id}</b></div>
+      </div>
+    </div>`;
+  }
+
+  function renderInspector(S){
+    ui.selPill.textContent = S.selected ? `${S.selected.kind.toUpperCase()} ${S.selected.id}` : "None";
+    const c = World.counts(S);
+    const selObj = World.findSelectedObj(S);
+
+    const sp = Staff.stationStaffProfile(S,"PREP"), sc = Staff.stationStaffProfile(S,"COOK"), sx = Staff.stationStaffProfile(S,"PASS");
+
+    const lines = [];
+    lines.push(`<div class="small">Totals: <b>${c.tables}</b> tables · <b>${c.seats}</b> seats · PREP <b>${c.PREP}</b> · COOK <b>${c.COOK}</b> · PASS <b>${c.PASS}</b> · DISH <b>${c.DISH}</b></div>`);
+    lines.push(`<div class="row" style="gap:8px; flex-wrap:wrap; margin-top:10px;">
+      <span class="pill">PREP ${Math.min(c.PREP, sp.capacity)}× @ ${sp.speed.toFixed(2)}</span>
+      <span class="pill">COOK ${Math.min(c.COOK+c.EXTRA_COOK, sc.capacity)}× @ ${sc.speed.toFixed(2)}</span>
+      <span class="pill">PASS ${Math.min(c.PASS, sx.capacity)}× @ ${sx.speed.toFixed(2)}</span>
+    </div>`);
+
+    if(selObj){
+      lines.push(`<hr style="border:0; border-top:1px solid rgba(255,255,255,0.08); margin:12px 0;">`);
+      lines.push(`<div style="font-weight:900;">Selected</div>`);
+      lines.push(`<div class="small">ID: <b>${selObj.id}</b> ${selObj.type?`· Type: <b>${selObj.type}</b>`:""}</div>`);
+      lines.push(`<div class="small">Pos: <b>${Math.round(selObj.x)},${Math.round(selObj.y)}</b> ${S.snap?"· Snap ON":""}</div>`);
+      if(S.selected.kind==="table"){
+        lines.push(`<div class="row" style="margin-top:10px; gap:8px;">
+          <button id="btnSeatsMinus">Seats −</button>
+          <span class="pill">Seats: ${selObj.seats}</span>
+          <button id="btnSeatsPlus">Seats +</button>
+        </div>`);
+        lines.push(`<div class="small" style="margin-top:8px;">Tip: 4-seaters raise revenue but increase plate demand.</div>`);
+      }
+    }else{
+      lines.push(`<div class="small" style="margin-top:10px;">Tap any item on the canvas to select it.</div>`);
+    }
+
+    lines.push(`<hr style="border:0; border-top:1px solid rgba(255,255,255,0.08); margin:12px 0;">`);
+    lines.push(`<div style="font-weight:900;">Everything you built</div>`);
+    lines.push(`<div class="small">Tap an item below to jump-select it.</div>`);
+    lines.push(`<div class="ticketList" style="margin-top:10px;">`);
+    for(const t of S.layout.tables){ lines.push(itemRow("table", t.id, `Table (${t.seats})`, S.selected)); }
+    for(const st of S.layout.stations){ lines.push(itemRow("station", st.id, st.type, S.selected)); }
+    for(const e of S.layout.equipment){
+      const name = e.type==="DISH"?"Dishwasher":(e.type==="WALKIN"?"Walk-in":(e.type==="EXTRA_COOK"?"Extra cooktop":"Equip"));
+      lines.push(itemRow("equip", e.id, name, S.selected));
+    }
+    lines.push(`</div>`);
+    ui.inspectorBody.innerHTML = lines.join("");
+
+    const bm = document.getElementById("btnSeatsMinus");
+    const bp = document.getElementById("btnSeatsPlus");
+    if(bm){
+      bm.onclick = ()=>{
+        const t = World.findSelectedObj(S);
+        if(t && t.seats){ t.seats = Math.max(2, t.seats-2); }
+      };
+    }
+    if(bp){
+      bp.onclick = ()=>{
+        const t = World.findSelectedObj(S);
+        if(t && t.seats){ t.seats = Math.min(8, t.seats+2); }
+      };
+    }
+
+    document.querySelectorAll("[data-sel-kind]").forEach(el=>{
+      el.addEventListener("click", ()=>{
+        S.selected = { kind: el.dataset.selKind, id: el.dataset.selId };
+      });
+    });
+  }
+
+  function renderStaff(S){
+    const cooks = S.cooks || [];
+    ui.staffPill.textContent = `${cooks.length} cooks · ${S.waiters||0} waiters · ${S.janitors||0} janitors`;
+    ui.staffList.innerHTML = "";
+    for(const c of cooks){
+      const el = document.createElement("div");
+      el.className = "staff";
+      const bar = (v)=>`<div class="miniBar"><div style="width:${Math.round(v*100)}%"></div></div>`;
+      el.innerHTML = `
+        <div class="top">
+          <div class="name">${c.name}</div>
+          <div class="meta small">${c.assign}</div>
+        </div>
+        <div class="small" style="margin-top:8px;">PREP ${bar(c.skills.PREP)} COOK ${bar(c.skills.COOK)} PASS ${bar(c.skills.PASS)}</div>
+        <div class="row" style="gap:8px; flex-wrap:wrap; margin-top:8px;">
+          <button data-assign="${c.id}" data-st="PREP">PREP</button>
+          <button data-assign="${c.id}" data-st="COOK">COOK</button>
+          <button data-assign="${c.id}" data-st="PASS">PASS</button>
+          <button data-assign="${c.id}" data-st="FLOAT">FLOAT</button>
+        </div>
+      `;
+      ui.staffList.appendChild(el);
+    }
+    ui.staffList.querySelectorAll("[data-assign]").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const id = btn.dataset.assign;
+        const st = btn.dataset.st;
+        const c = cooks.find(x=>x.id===id);
+        if(c){ c.assign = st; }
+      });
+    });
+  }
+
+  function renderReservations(S){
+    ui.resMiniPill.textContent = `${S.reservations.length} bookings`;
+    ui.resList.innerHTML = "";
+    for(const r of S.reservations.slice(0,6)){
+      const el = document.createElement("div");
+      el.className = "ticket";
+      const eta = Math.max(0, Math.round(r.timeMin - S.t));
+      el.innerHTML = `<div class="top">
+        <div class="title">${r.isVip?"VIP ":""}Booking ${r.id} · ${r.size}p</div>
+        <div class="meta">${r.status} · ${eta}s</div>
+      </div>`;
+      ui.resList.appendChild(el);
+    }
+  }
+
+  function updateTopBadges(S){
+    ui.modePill.textContent = S.mode;
+    ui.bottlePill.textContent = (S.lastWorst?.name==="—") ? "Bottleneck: —" : `Bottleneck: ${S.lastWorst.name} (${S.lastWorst.score.toFixed(1)}×)`;
+    ui.resPill.textContent = `Bookings ${S.resSettings.pct}% · VIP ${S.resSettings.vipPct}%`;
+  }
+
+  function updateServiceKPIs(S){
+    ui.cashLbl.textContent = U.fmtMoney(S.cash);
+    ui.ratingLbl.textContent = S.rating.toFixed(2);
+    ui.cleanLbl.textContent = `${Math.round(S.cleanliness*100)}%`;
+    ui.platesLbl.textContent = `${Math.round(S.platesClean)}/${S.platesTotal} clean`;
+    ui.profitLbl.textContent = U.fmtMoney(S.shift?.profit ?? 0);
+    ui.shiftLbl.textContent = (S.mode==="SERVICE" && S.shift) ? U.fmtTime(S.shift.left) : "—";
+    ui.board86.textContent = (S.board86?.length ? S.board86.join(", ") : "None");
+    ui.svcPill.textContent = S.mode==="SERVICE" ? `${S.guests.length} parties · ${S.tickets.length} tickets` : "Build then run service";
+    ui.btnStart.textContent = (S.mode==="SERVICE") ? "Stop Service" : "Start Service";
+    ui.btnPause.textContent = S.paused ? "Resume" : "Pause";
+    ui.btnSpeed.textContent = `Speed ×${S.speed}`;
+    ui.btnHints.textContent = `Hints: ${S.hints.enabled?"On":"Off"}`;
+    ui.btnSnap.textContent = `Snap: ${S.snap?"On":"Off"}`;
+
+    ui.resPct.value = S.resSettings.pct; ui.resPctLbl.textContent = S.resSettings.pct;
+    ui.vipPct.value = S.resSettings.vipPct; ui.vipPctLbl.textContent = S.resSettings.vipPct;
+    ui.overbookPct.value = S.resSettings.overbookPct; ui.overbookLbl.textContent = S.resSettings.overbookPct;
+    ui.acceptWalkins.checked = !!S.resSettings.acceptWalkins;
+    ui.holdTables.checked = !!S.resSettings.holdTables;
+  }
+
+  function renderHintsBox(S){
+    if(!S.hints.enabled){
+      ui.hintPill.textContent = "Off";
+      ui.hintText.innerHTML = "Hints are off. Tap <b>Hints</b> to re-enable.";
+      return;
+    }
+    const list = Hints.build(S);
+    if(!list.length){
+      ui.hintPill.textContent = "—";
+      ui.hintText.textContent = "No hints.";
+      return;
+    }
+    if(S.hints.idx >= list.length) S.hints.idx = 0;
+    const h = list[S.hints.idx];
+    ui.hintPill.textContent = h.pill;
+    ui.hintText.innerHTML = h.text;
+  }
+
+  function nextHint(S){
+    const list = Hints.build(S);
+    S.hints.idx = (S.hints.idx+1) % Math.max(1,list.length);
+  }
+  function prevHint(S){
+    const list = Hints.build(S);
+    S.hints.idx = (S.hints.idx-1 + list.length) % Math.max(1,list.length);
+  }
+
+  function fixNext(S){
+    const w = S.lastWorst || {name:"—", score:0};
+    const map = {
+      "FOH": { sel:"#btnHireWaiter", title:"Fix FOH", body:"FOH is bottlenecking. Hire waiters or reduce demand (walk-ins/bookings)." },
+      "DISH PIT": { sel:"#toolGrid", title:"Fix Dishpit", body:"Dishpit is bottlenecking. Add dishwashers in the kitchen area." },
+      "PREP": { sel:"#btnHireCook", title:"Fix PREP", body:"Add PREP stations and assign/hire cooks to PREP." },
+      "COOK": { sel:"#btnHireCook", title:"Fix COOK", body:"Add COOK stations/extra cooktop and assign/hire cooks to COOK." },
+      "PASS": { sel:"#btnHireCook", title:"Fix PASS", body:"Add a PASS station and assign a strong cook to PASS." },
+    };
+    const t = map[w.name] || (S.mode==="SERVICE"
+      ? { sel:"#bottlePill", title:"Fix Next", body:"Start with the Bottleneck. Add capacity there (stations + staff) or reduce demand." }
+      : { sel:"#toolGrid", title:"Fix Next", body:"You’re in Build Mode. Place missing stations/tables, then start service." });
+    Tutorial.coachFocus(t.sel);
+    Tips.showTip(t.title, t.body);
+  }
+
+  function wireTooltips(){
+    const map = {
+      "#btnStart": { title:"Start/Stop Service", body:"Start service to stress-test your build. A shift ends automatically and wages are paid." },
+      "#btnFixNext": { title:"Fix Next", body:"Jumps you to the biggest bottleneck and tells you what to do next." },
+      "#toolGrid": { title:"Build Tools", body:"Choose a tool then tap canvas to place. Tap item to select; drag to move." },
+      "#inspectorCard": { title:"Inspector", body:"Everything you built is listed here. Tap any item to re-select instantly." },
+      "#presetSel": { title:"Presets", body:"Cafe / Bistro / Fine Dining load different starting floorplans and service pressure." },
+      "#btnAutoAssign": { title:"Auto Assign", body:"Automatically assigns your best cooks to PREP / COOK / PASS." },
+    };
+    for(const sel of Object.keys(map)){
+      const el = document.querySelector(sel);
+      if(!el) continue;
+      if(el._tipWired) continue;
+      el._tipWired = true;
+      const icon = document.createElement("span");
+      icon.className = "tipIcon";
+      icon.textContent = "?";
+      icon.addEventListener("click", ()=>Tips.showTip(map[sel].title, map[sel].body));
+      el.insertAdjacentElement("afterend", icon);
+    }
+    Tips.wireClose();
+  }
+
+  function wire(S){
+    buildToolsUI(S);
+    wireTooltips();
+
+    // Top controls
+    ui.btnStart.onclick = ()=>{
+      if(S.mode==="SERVICE") Service.stop(S, ui.toast);
+      else Service.start(S, ui.toast);
+      Storage.save(S);
+    };
+    ui.btnPause.onclick = ()=>{ S.paused = !S.paused; };
+    ui.btnSpeed.onclick = ()=>{ S.speed = (S.speed===1)?2:(S.speed===2?3:1); };
+    ui.btnReset.onclick = ()=>{
+      Storage.clear();
+      const fresh = State.createState();
+      Object.keys(S).forEach(k=>delete S[k]);
+      Object.assign(S, fresh);
+      buildToolsUI(S);
+      ui.toast("Reset complete.");
+    };
+    ui.btnApplyPreset.onclick = ()=>{
+      State.applyPresetToState(S, ui.presetSel.value);
+      Staff.ensureDefaultCooks(S);
+      Staff.autoAssignStations(S);
+      Res.regenerate(S);
+      buildToolsUI(S);
+      ui.toast(`Preset applied: ${ui.presetSel.value}`);
+      Storage.save(S);
+    };
+    ui.btnFixNext.onclick = ()=>fixNext(S);
+    ui.btnTutorial.onclick = ()=>Tutorial.start(0);
+    ui.btnHints.onclick = ()=>{ S.hints.enabled = !S.hints.enabled; };
+    ui.btnSnap.onclick = ()=>{ S.snap = !S.snap; };
+
+    ui.btnDeleteSel.onclick = ()=>{ if(Build.deleteSelected(S)){ ui.toast("Deleted."); Storage.save(S); } };
+
+    ui.btnHireCook.onclick = ()=>{ S.cooks.push(Staff.createCook()); Staff.autoAssignStations(S); ui.toast("Hired a cook."); if(S.mode==="SERVICE"){ try{ RT.require("actors").spawnStaff(S); }catch(e){} } Storage.save(S); };
+    ui.btnHireWaiter.onclick = ()=>{ S.waiters += 1; ui.toast("Hired a waiter."); if(S.mode==="SERVICE"){ try{ RT.require("actors").spawnStaff(S); }catch(e){} } Storage.save(S); };
+    ui.btnHireJanitor.onclick = ()=>{ S.janitors += 1; ui.toast("Hired a janitor."); if(S.mode==="SERVICE"){ try{ RT.require("actors").spawnStaff(S); }catch(e){} } Storage.save(S); };
+    ui.btnAutoAssign.onclick = ()=>{ Staff.autoAssignStations(S); ui.toast("Auto assigned stations."); Storage.save(S); };
+
+    ui.btnHintNext.onclick = ()=>nextHint(S);
+    ui.btnHintPrev.onclick = ()=>prevHint(S);
+    ui.btnHintPin.onclick = ()=>{
+      S.hints.pinned = !S.hints.pinned;
+      ui.btnHintPin.textContent = `Pin: ${S.hints.pinned ? "On":"Off"}`;
+    };
+
+    const syncRes = ()=>{
+      S.resSettings.pct = parseInt(ui.resPct.value,10);
+      S.resSettings.vipPct = parseInt(ui.vipPct.value,10);
+      S.resSettings.overbookPct = parseInt(ui.overbookPct.value,10);
+      S.resSettings.acceptWalkins = ui.acceptWalkins.checked;
+      S.resSettings.holdTables = ui.holdTables.checked;
+    };
+    ui.resPct.oninput = ()=>syncRes();
+    ui.vipPct.oninput = ()=>syncRes();
+    ui.overbookPct.oninput = ()=>syncRes();
+    ui.acceptWalkins.onchange = ()=>syncRes();
+    ui.holdTables.onchange = ()=>syncRes();
+    ui.btnRegenerateRes.onclick = ()=>{ syncRes(); Res.regenerate(S); ui.toast("Bookings regenerated."); Storage.save(S); };
+
+    // Tutorial modal wiring
+    document.getElementById("btnTutClose").onclick = Tutorial.close;
+    document.getElementById("btnTutNext").onclick = Tutorial.next;
+    document.getElementById("btnTutPrev").onclick = Tutorial.prev;
+    document.getElementById("tutorialModal").addEventListener("click", (e)=>{ if(e.target.id==="tutorialModal") Tutorial.close(); });
+
+    // Canvas pointer interactions
+    const canvas = ui.canvas;
+    const rect = ()=>canvas.getBoundingClientRect();
+    const toCanvas = (clientX, clientY)=>{
+      const r = rect();
+      const x = (clientX - r.left) * (canvas.width / r.width);
+      const y = (clientY - r.top) * (canvas.height / r.height);
+      return {x,y};
+    };
+
+    let dragging=false;
+    canvas.addEventListener("pointerdown", (e)=>{
+      canvas.setPointerCapture(e.pointerId);
+      const p = toCanvas(e.clientX, e.clientY);
+      const hit = World.hitTest(S, p.x, p.y);
+      if(hit){
+        S.selected = hit;
+        dragging = true;
+        const obj = World.findSelectedObj(S);
+        if(obj){
+          S.drag = { offX: p.x - obj.x, offY: p.y - obj.y };
+        }
+        return;
+      }
+      Build.placeAt(S, p.x, p.y, ui.toast);
+      Storage.save(S);
+    });
+    canvas.addEventListener("pointermove", (e)=>{
+      if(!dragging || !S.selected || !S.drag) return;
+      const p = toCanvas(e.clientX, e.clientY);
+      Build.moveSelectedTo(S, p.x - S.drag.offX, p.y - S.drag.offY);
+    });
+    canvas.addEventListener("pointerup", ()=>{
+      dragging=false; S.drag=null;
+      Storage.save(S);
+    });
+  }
+
+  function renderAll(S){
+    updateTopBadges(S);
+    updateServiceKPIs(S);
+    renderReservations(S);
+    renderInspector(S);
+    renderStaff(S);
+    if(S.hints.enabled && !S.hints.pinned) renderHintsBox(S);
+    else renderHintsBox(S);
+    Renderer.draw(ui.ctx, S);
+  }
+
+  return { ui, wire, renderAll };
+});
+
+// -------------------- main --------------------
+RT.define("main", ["storage","state","staff","reservations","ui","tutorial","service"], (Storage, State, Staff, Res, UI, Tutorial, Service) => {
+  let S = Storage.load() || State.createState();
+  Staff.ensureDefaultCooks(S);
+
+  // initial bookings
+  if(!S.reservations || !S.reservations.length) Res.regenerate(S);
+
+  UI.wire(S);
+
+  // auto tutorial (small delay so layout is ready)
+  setTimeout(()=>Tutorial.maybeAuto(), 450);
+
+  let last = performance.now();
+  function loop(now){
+    const rawDt = Math.min(0.05, (now-last)/1000);
+    last = now;
+    const dt = rawDt * (S.paused ? 0 : S.speed);
+
+    if(S.mode==="SERVICE" && S.running && !S.paused){
+      RT.require("service").tick(S, dt, UI.ui.toast);
+      try{ RT.require("actors").tick(S, dt); }catch(e){}
+    }
+
+    UI.renderAll(S);
+
+    if(Math.random() < 0.05) Storage.save(S);
+    requestAnimationFrame(loop);
+  }
   requestAnimationFrame(loop);
-})();
+});
+
+// Boot
+RT.require("main");
 </script>
 </body>
 </html>
