@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Restaurant Tycoon — Flat Pack (Pacing + Regulars v2.1)</title>
+  <title>Restaurant Tycoon — Build/Operate v2.2.0</title>
   <style>
     :root{
       --bg:#0f1115; --panel:#171a21; --panel2:#11131a; --text:#e8e8ea; --muted:#a6a6ad;
@@ -57,26 +57,64 @@
     .legend{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
     .toggle{ display:flex; align-items:center; gap:8px; }
     .toggle input{ transform:scale(1.1); }
-    @media (max-width: 900px){
-      .wrap{ flex-direction:column; }
+    .canvasWrap{
+  border:1px solid #262b40;
+  border-radius:12px;
+  overflow:hidden;
+  background:radial-gradient(1100px 700px at 20% 10%, #1a2a3a 0%, #0b0d14 40%, #070810 100%);
+}
+.canvasWrap canvas{
+  display:block;
+  border:0;
+  background:transparent;
+}
+
+@media (max-width: 900px){
+  .wrap{ flex-direction:column; }
+  .right{ width:auto; max-width:none; }
+  .canvasWrap{
+    height:58vh;
+    overflow:auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  canvas{
+    width:930px;   /* world width */
+    height:660px;  /* world height */
+  }
+}
       .right{ width:auto; max-width:none; }
       canvas{ height:52vh; }
     }
-  </style>
+  .grid{ display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:8px; }
+.tblBtn{ padding:10px; border-radius:12px; border:1px solid #2a3050; background:#0f1320; color:var(--text); cursor:pointer; }
+.tblBtn.off{ opacity:.55; border-style:dashed; }
+.tblBtn small{ display:block; opacity:.8; margin-top:4px; }
+@media (max-width: 900px){
+  .grid{ grid-template-columns: repeat(3, minmax(0,1fr)); }
+}
+
+</style>
 </head>
 <body>
 <div class="wrap">
   <div class="left">
-    <canvas id="c" width="1100" height="700" aria-label="Restaurant map"></canvas>
+    <div class="canvasWrap">
+      <canvas id="c" width="1100" height="700" aria-label="Restaurant map"></canvas>
+    </div>
   </div>
 
   <div class="right">
     <div class="card">
       <h2>
-        <span>Restaurant Tycoon — v2.1.4</span>
+        <span>Restaurant Tycoon — v2.2.0</span>
         <span class="pill" id="dayPill">Day 1</span>
       </h2>
-      <div class="body">
+<div class="row" id="modeRow" style="margin-top:10px;">
+  <button id="btnModeBuild">Build</button>
+  <button class="primary" id="btnModeOperate">Operate</button>
+  <span class="pill" id="modePill">OPERATE</span>
+</div>
+<div class="body">
         <div class="row" style="align-items:center; justify-content:space-between;">
           <div class="pill">Shift: <span id="shiftTime">03:20</span></div>
           <div class="pill">Speed: <span id="speedText">1×</span></div>
@@ -148,7 +186,49 @@
         <div class="small" style="margin-top:8px;">
           New: <b>Complaints</b> you can resolve mid-service + <b>split bills & EFTPOS delays</b> + <b>runner prioritises drinks</b>.
         </div>
+      
+<div class="card" id="buildCard" style="display:none;">
+  <h2><span>Build Mode</span><span class="pill" id="buildPill">Day 0</span></h2>
+  <div class="body">
+    <div class="small">Spend cash to expand seating and upgrade stations. Build mode is best used <b>between services</b>.</div>
+
+    <div class="row" style="margin-top:10px;">
+      <div class="stat">
+        <div class="k">Open Tables</div>
+        <div class="v" id="openTablesTxt">0</div>
       </div>
+      <div class="stat">
+        <div class="k">Kitchen Lv</div>
+        <div class="v" id="kitchenLvTxt">0</div>
+      </div>
+      <div class="stat">
+        <div class="k">Bar Lv</div>
+        <div class="v" id="barLvTxt">0</div>
+      </div>
+      <div class="stat">
+        <div class="k">Decor Lv</div>
+        <div class="v" id="decorLvTxt">0</div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px; flex-wrap:wrap;">
+      <button id="btnAddTable">Add Table (+$200)</button>
+      <button id="btnRemoveTable">Remove Table (+$120)</button>
+      <button id="btnUpKitchen">Upgrade Kitchen (+$350)</button>
+      <button id="btnUpBar">Upgrade Bar (+$300)</button>
+      <button id="btnUpDecor">Upgrade Decor (+$250)</button>
+    </div>
+
+    <div class="small" style="margin-top:10px;">Tap tables to open/close them:</div>
+    <div class="grid" id="tableToggles"></div>
+
+    <div class="row" style="margin-top:10px;">
+      <button class="primary" id="btnJumpDining">Jump: Dining</button>
+      <button class="primary" id="btnJumpKitchen">Jump: Kitchen</button>
+      <button class="primary" id="btnJumpDoor">Jump: Door</button>
+    </div>
+  </div>
+</div></div>
     </div>
 
     <div class="card">
@@ -216,9 +296,11 @@
 <div class="toast" id="toast"></div>
 
 <script>
+
 function showFatalError(err){
   try{
-    const msg = (err && err.stack) ? err.stack : String(err);
+    const msg = (err && (err.name||err.message)) ? (String(err.name||'Error')+': '+String(err.message||err)) : String(err);
+    const stack = (err && err.stack) ? err.stack : '';
     console.error(err);
     const div=document.createElement("div");
     div.style.position="fixed";
@@ -233,7 +315,7 @@ function showFatalError(err){
     div.style.borderRadius="10px";
     div.style.fontFamily="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace";
     div.style.fontSize="12px";
-    div.innerHTML = "<b>Game error (JS stopped)</b><div style='opacity:.85;margin-top:6px;white-space:pre-wrap;max-height:160px;overflow:auto;'>" + msg.replace(/</g,"&lt;") + "</div>";
+    div.innerHTML = "<b>Game error (JS stopped)</b><div style='opacity:.9;margin-top:6px;'>" + msg.replace(/</g,'&lt;') + "</div>" + (stack? ("<div style='opacity:.8;margin-top:6px;white-space:pre-wrap;max-height:160px;overflow:auto;'>"+ stack.replace(/</g,'&lt;') +"</div>") : "");
     document.body.appendChild(div);
   }catch(e){}
 }
@@ -448,6 +530,7 @@ function foodCostPctToday(){
 function initTables(){
   Game.tables = DATA.layout.tables.map((p,i)=>({
     id:"T"+(i+1), x:p.x,y:p.y, seats:p.seats,
+    enabled: (Game.build && Array.isArray(Game.build.tableMask)) ? !!Game.build.tableMask[i] : true,
     occupied:0, party:null, dirty:0,
     expectedFreeAt:0,             // pacing: predicted table turnover
     holdForBookingId:null,        // pacing: reserved hold
@@ -762,6 +845,7 @@ function predictTableFreeAt(table){
 function bestTableFor(party, allowHeld=false){
   // can't use tables held for upcoming booking (unless party is that booking)
   const candidates = Game.tables.filter(t=>{
+    if(t.enabled===false) return false;
     if(t.occupied!==0) return false;
     if(!allowHeld && t.holdForBookingId && Game.t < t.holdUntil) return false;
     if(t.seats < party.size) return false;
@@ -831,7 +915,7 @@ function seatParty(p){
   // if booking and a table is held for it, prefer that
   let t = null;
   if(p.isBooking && p.bookingId){
-    t = Game.tables.find(x=>x.holdForBookingId===p.bookingId && x.occupied===0);
+    t = Game.tables.find(x=>x.enabled!==false && x.holdForBookingId===p.bookingId && x.occupied===0);
     if(!t){
       // try any table even if held (because booking)
       t = bestTableFor(p, true);
@@ -1214,11 +1298,13 @@ function processStations(dt){
 
       const cleanFactor = U.clamp(1.0+(Game.cleanliness-0.85)*0.6, 0.72, 1.15);
       const skillFactor = (sid==="BAR") ? Game.skill.bar : Game.skill.cook;
+      const up = (Game.build||{});
+      const upgradeFactor = (sid==="BAR") ? (1 + 0.05*(up.barLevel||0)) : (1 + 0.05*(up.kitchenLevel||0));
 
       // Bottlenecks: if station queue is huge, stress slows a bit
       const pressure = U.clamp(1 - (st.queue.length/24)*0.12, 0.86, 1.0);
 
-      step.remaining -= dt * cleanFactor * skillFactor * pressure;
+      step.remaining -= dt * cleanFactor * skillFactor * upgradeFactor * pressure;
 
       if(step.remaining<=0){
         step.state="DONE";
@@ -1575,7 +1661,8 @@ function starsToText(stars){
   return "★★★★★".slice(0,stars) + "☆☆☆☆☆".slice(0,5-stars);
 }
 function makeReview(p){
-  const sat = p.satisfaction ?? 0.6;
+  const decorBonus = 0.02 * ((Game.build||{}).decorLevel||0);
+  const sat = U.clamp((p.satisfaction ?? 0.6) + decorBonus, 0.1, 1.0);
   const stars = starsFromSat(sat);
   const dish = p.dishId ? getDish(p.dishId) : null;
   const dishName = dish ? dish.name : "Food";
@@ -1712,6 +1799,7 @@ function endDay(){
 
 /* -------------------- Simulation -------------------- */
 function updateSim(dt){
+  const L=DATA.layout;
   // cleanliness baseline
   Game.cleanliness = U.clamp(Game.cleanliness - DATA.cleanlinessDecay*dt, 0, 1);
   if(Game.cleaners>0) Game.cleanliness = U.clamp(Game.cleanliness + (0.0085*Game.cleaners)*dt, 0, 1);
@@ -1878,6 +1966,27 @@ if(p.state==="LEAVING"){
 /* -------------------- Rendering -------------------- */
 const canvas=document.getElementById("c");
 const ctx=canvas.getContext("2d");
+/* roundRect polyfill (iOS Safari compatibility) */
+(function(){
+  try{
+    if(typeof CanvasRenderingContext2D !== "undefined" && !CanvasRenderingContext2D.prototype.roundRect){
+      CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
+        r = (typeof r==="number") ? {tl:r,tr:r,br:r,bl:r} : (r||{tl:0,tr:0,br:0,bl:0});
+        const tl=r.tl||0, tr=r.tr||0, br=r.br||0, bl=r.bl||0;
+        this.moveTo(x+tl, y);
+        this.lineTo(x+w-tr, y);
+        this.quadraticCurveTo(x+w, y, x+w, y+tr);
+        this.lineTo(x+w, y+h-br);
+        this.quadraticCurveTo(x+w, y+h, x+w-br, y+h);
+        this.lineTo(x+bl, y+h);
+        this.quadraticCurveTo(x, y+h, x, y+h-bl);
+        this.lineTo(x, y+tl);
+        this.quadraticCurveTo(x, y, x+tl, y);
+        return this;
+      };
+    }
+  }catch(e){}
+})();
 let DPR=Math.max(1, Math.min(2, window.devicePixelRatio||1));
 function resizeCanvas(){
   const r=canvas.getBoundingClientRect();
@@ -2423,6 +2532,117 @@ for(const d of allMenu()){
   if(s<=0){ el.innerHTML = "<span class='badTxt'><b>86</b></span>"; }
   else if(s<=DATA.inventory.lowThreshold){ el.innerHTML = "<span class='warnTxt'><b>"+s+"</b></span>"; }
   else { el.textContent = String(s); }
+}function setMode(mode){
+  Game.mode = (mode==="BUILD") ? "BUILD" : "OPERATE";
+  const mp=document.getElementById("modePill"); if(mp) mp.textContent = Game.mode;
+  const bc=document.getElementById("buildCard"); if(bc) bc.style.display = (Game.mode==="BUILD") ? "" : "none";
+
+  // Disable service controls while building
+  const canService = (Game.mode==="OPERATE");
+  const s = document.getElementById("btnStart"); if(s) s.disabled = !canService || Game.serviceRunning;
+  const r = document.getElementById("btnRush");  if(r) r.disabled = !canService || Game.serviceRunning;
+
+  // If switching to build mid-service, pause safely
+  if(Game.mode==="BUILD" && Game.serviceRunning){
+    Game.serviceRunning=false;
+    const p=document.getElementById("btnPause"); if(p) p.disabled=true;
+  }
+
+  renderBuildPanel();
+  saveGame();
+}
+
+function countOpenTables(){
+  return Game.tables.filter(t=>t.enabled!==false).length;
+}
+
+function renderBuildPanel(){
+  const bc=document.getElementById("buildCard"); if(!bc) return;
+  const openTxt=document.getElementById("openTablesTxt");
+  const kTxt=document.getElementById("kitchenLvTxt");
+  const bTxt=document.getElementById("barLvTxt");
+  const dTxt=document.getElementById("decorLvTxt");
+  if(openTxt) openTxt.textContent = `${countOpenTables()} / ${Game.tables.length}`;
+  if(kTxt) kTxt.textContent = String((Game.build||{}).kitchenLevel||0);
+  if(bTxt) bTxt.textContent = String((Game.build||{}).barLevel||0);
+  if(dTxt) dTxt.textContent = String((Game.build||{}).decorLevel||0);
+
+  const grid=document.getElementById("tableToggles"); 
+  if(grid){
+    grid.innerHTML="";
+    for(const t of Game.tables){
+      const on = (t.enabled!==false);
+      const cls = on ? "tblBtn" : "tblBtn off";
+      grid.insertAdjacentHTML("beforeend", `<button class="${cls}" data-tid="${t.id}">${t.id}<small>${t.seats}-top</small></button>`);
+    }
+  }
+
+  // update build day pill
+  const bp=document.getElementById("buildPill"); if(bp) bp.textContent = `Day ${Math.max(0,(Game.day||1)-1)}`;
+}
+
+function spend(cost){
+  if(Game.cash < cost){ toast("Not enough cash."); return false; }
+  Game.cash -= cost;
+  return true;
+}
+
+function addTable(){
+  const closed = Game.tables.find(t=>t.enabled===false);
+  if(!closed){ toast("All tables already open."); return; }
+  if(!spend(200)) return;
+  closed.enabled=true;
+  syncTableMask();
+  toast(`${closed.id} opened.`);
+  renderBuildPanel(); updateUI(); saveGame();
+}
+
+function removeTable(){
+  const open = Game.tables.filter(t=>t.enabled!==false);
+  if(open.length<=2){ toast("Keep at least 2 tables open."); return; }
+  const t = open[open.length-1];
+  if(t.occupied!==0){ toast("Can't close an occupied table."); return; }
+  Game.cash += 120;
+  t.enabled=false;
+  t.holdForBookingId=null; t.holdUntil=0;
+  syncTableMask();
+  toast(`${t.id} closed.`);
+  renderBuildPanel(); updateUI(); saveGame();
+}
+
+function upgrade(which){
+  const up = (Game.build||{});
+  if(which==="KITCHEN"){
+    const lvl=up.kitchenLevel||0;
+    const cost=350 + lvl*180;
+    if(lvl>=5){ toast("Kitchen at max."); return; }
+    if(!spend(cost)) return;
+    up.kitchenLevel=lvl+1;
+    toast(`Kitchen upgraded to Lv ${up.kitchenLevel}.`);
+  }
+  if(which==="BAR"){
+    const lvl=up.barLevel||0;
+    const cost=300 + lvl*160;
+    if(lvl>=5){ toast("Bar at max."); return; }
+    if(!spend(cost)) return;
+    up.barLevel=lvl+1;
+    toast(`Bar upgraded to Lv ${up.barLevel}.`);
+  }
+  if(which==="DECOR"){
+    const lvl=up.decorLevel||0;
+    const cost=250 + lvl*140;
+    if(lvl>=6){ toast("Decor at max."); return; }
+    if(!spend(cost)) return;
+    up.decorLevel=lvl+1;
+    toast(`Decor upgraded to Lv ${up.decorLevel}.`);
+  }
+  Game.build=up;
+  renderBuildPanel(); updateUI(); saveGame();
+}
+
+function syncTableMask(){
+  if(!Game.build) Game.build={};
+  Game.build.tableMask = Game.tables.map(t=>t.enabled!==false);
 }
 
   renderBookings();
@@ -2433,17 +2653,19 @@ for(const d of allMenu()){
 
 /* -------------------- Save/Load -------------------- */
 function saveGame(){
-  localStorage.setItem("rtycoon_save_v214", JSON.stringify({
+  localStorage.setItem("rtycoon_save_v220", JSON.stringify({
     day:Game.day,cash:Game.cash,rating:Game.rating,cleanliness:Game.cleanliness,
     cooks:Game.cooks,cleaners:Game.cleaners,servers:Game.servers,runners:Game.runners,bartenders:Game.bartenders,
     skill:Game.skill,
     acceptWalkins:Game.acceptWalkins,
     prices:Game.prices,reviews:Game.reviews,
-    regularsDB:Game.regularsDB
+    regularsDB:Game.regularsDB,
+    build:Game.build,
+    mode:Game.mode
   }));
 }
 function loadGame(){
-  const raw=localStorage.getItem("rtycoon_save_v214");
+  const raw=localStorage.getItem("rtycoon_save_v220");
   if(!raw) return false;
   try{
     const s=JSON.parse(raw);
@@ -2454,11 +2676,27 @@ function loadGame(){
     Game.prices=s.prices??{};
     Game.reviews=Array.isArray(s.reviews)?s.reviews:[];
     Game.regularsDB = (s.regularsDB && typeof s.regularsDB==="object") ? s.regularsDB : {};
+    Game.build = (s.build && typeof s.build==='object') ? s.build : null;
+    Game.mode = (s.mode==='BUILD' || s.mode==='OPERATE') ? s.mode : 'OPERATE';
     return true;
   }catch{return false;}
 }
+
+
+function ensureBuildDefaults(){
+  const n = DATA.layout.tables.length;
+  Game.build = Game.build && typeof Game.build==='object' ? Game.build : {};
+  if(!Array.isArray(Game.build.tableMask) || Game.build.tableMask.length!==n){
+    // Start smaller so "build" feels real: open first 4 tables by default.
+    Game.build.tableMask = Array.from({length:n}, (_,i)=> i < 4);
+  }
+  Game.build.kitchenLevel = Game.build.kitchenLevel ?? 0;
+  Game.build.barLevel    = Game.build.barLevel ?? 0;
+  Game.build.decorLevel  = Game.build.decorLevel ?? 0;
+  Game.mode = (Game.mode==='BUILD' || Game.mode==='OPERATE') ? Game.mode : 'OPERATE';
+}
 function resetAll(){
-  localStorage.removeItem("rtycoon_save_v214");
+  localStorage.removeItem("rtycoon_save_v220");
   Game.day=1; Game.cash=420; Game.rating=3.6; Game.cleanliness=0.92;
   Game.cooks=3; Game.cleaners=0; Game.servers=1; Game.runners=1; Game.bartenders=1;
   Game.skill={cook:1.00, bar:1.00};
@@ -2476,6 +2714,35 @@ document.getElementById("btnStart")?.addEventListener("click", ()=>startDay());
 document.getElementById("btnPause")?.addEventListener("click", ()=>{ if(Game.running) Game.paused=!Game.paused; });
 document.getElementById("btnSpeed")?.addEventListener("click", ()=>{ Game.speedIdx=(Game.speedIdx+1)%Game.speedList.length; });
 document.getElementById("btnReset")?.addEventListener("click", ()=>resetAll());
+
+document.getElementById("btnModeBuild")?.addEventListener("click", ()=>setMode("BUILD"));
+document.getElementById("btnModeOperate")?.addEventListener("click", ()=>setMode("OPERATE"));
+
+document.getElementById("btnAddTable")?.addEventListener("click", ()=>addTable());
+document.getElementById("btnRemoveTable")?.addEventListener("click", ()=>removeTable());
+document.getElementById("btnUpKitchen")?.addEventListener("click", ()=>upgrade("KITCHEN"));
+document.getElementById("btnUpBar")?.addEventListener("click", ()=>upgrade("BAR"));
+document.getElementById("btnUpDecor")?.addEventListener("click", ()=>upgrade("DECOR"));
+
+document.getElementById("tableToggles")?.addEventListener("click", (e)=>{
+  const b=e.target.closest("button[data-tid]"); if(!b) return;
+  const t=Game.tables.find(x=>x.id===b.dataset.tid); if(!t) return;
+  if(t.occupied!==0){ toast("Can't close an occupied table."); return; }
+  t.enabled = !t.enabled;
+  syncTableMask();
+  renderBuildPanel(); updateUI(); saveGame();
+});
+
+// Jump buttons: pan the scrollable canvasWrap on mobile
+function jumpTo(pt){
+  const wrap=document.querySelector(".canvasWrap");
+  if(!wrap) return;
+  wrap.scrollLeft = Math.max(0, pt.x - wrap.clientWidth/2);
+  wrap.scrollTop  = Math.max(0, pt.y - wrap.clientHeight/2);
+}
+document.getElementById("btnJumpDining")?.addEventListener("click", ()=>jumpTo({x:DATA.layout.diningRect.x+DATA.layout.diningRect.w/2, y:DATA.layout.diningRect.y+DATA.layout.diningRect.h/2}));
+document.getElementById("btnJumpKitchen")?.addEventListener("click", ()=>jumpTo({x:DATA.layout.kitchenRect.x+DATA.layout.kitchenRect.w/2, y:DATA.layout.kitchenRect.y+DATA.layout.kitchenRect.h/2}));
+document.getElementById("btnJumpDoor")?.addEventListener("click", ()=>jumpTo({x:DATA.layout.entry.x, y:DATA.layout.entry.y}));
 document.getElementById("btnHireCook")?.addEventListener("click", ()=>{ Game.cooks+=1; saveGame(); toast("Hired a cook."); });
 document.getElementById("btnHireCleaner")?.addEventListener("click", ()=>{ Game.cleaners+=1; saveGame(); toast("Hired a cleaner."); });
 document.getElementById("btnHireServer")?.addEventListener("click", ()=>{ Game.servers+=1; saveGame(); toast("Hired a server."); });
@@ -2525,7 +2792,7 @@ function loop(){
     updateSim(sdt);
   }
   updateUI();
-  draw();
+  try{ draw(); }catch(e){ showFatalError(e); Game._drawFailed=true; }
   requestAnimationFrame(loop);
 }
 
