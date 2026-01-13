@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Test Load</title>
+  <style>
+    body { background: #000; color: #0f0; font-family: monospace; padding: 20px; }
+    .success { color: #0f0; }
+    .error { color: #f00; }
+  </style>
+</head>
+<body>
+  <h1>Module Load Test</h1>
+  <div id="log"></div>
+  
+  <script type="module">
+    const log = document.getElementById('log');
+    
+    function addLog(msg, success = true) {
+      const p = document.createElement('p');
+      p.className = success ? 'success' : 'error';
+      p.textContent = msg;
+      log.appendChild(p);
+    }
+    
+    addLog('Starting module load test...');
+    
+    try {
+      addLog('1. Loading state.js...');
+      const stateModule = await import('./state.js');
+      addLog('   ✓ state.js loaded');
+      
+      addLog('2. Loading ui_screens.js...');
+      const uiModule = await import('./ui_screens.js');
+      addLog('   ✓ ui_screens.js loaded');
+      
+      addLog('3. Loading main.js...');
+      const mainModule = await import('./main.js');
+      addLog('   ✓ main.js loaded');
+      
+      addLog('');
+      addLog('SUCCESS! All modules loaded correctly.', true);
+      addLog('The game should work. Check index.html');
+      
+    } catch (error) {
+      addLog('');
+      addLog('ERROR: ' + error.message, false);
+      addLog('Stack: ' + error.stack, false);
+    }
+  </script>
+</body>
+</html>
